@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>trading console</title>
+<title>BR0THER-H00D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet"/>
 <style>
@@ -284,10 +284,10 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 <!-- TITLEBAR -->
 <div class="tb">
   
-  <div class="tb-title">user@console:~$ ./trading --mode=live</div>
+  
   <div class="tb-r">
     <span id="tb-time">00:00:00</span>
-    <span style="color:var(--muted)">Ubuntu 24.04 LTS</span>
+    
   </div>
 </div>
 
@@ -296,7 +296,7 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 <!-- SIDEBAR -->
 <div class="sb">
   <div class="sb-top">
-    <div class="sb-prompt" style="font-size:11px;color:var(--muted2);letter-spacing:.03em">user@solana:~$</div>
+    
     <div class="sb-conn" onclick="showConnect()">
       <div id="conn-dot"></div>
       <div id="conn-text">endpoint: not set</div>
@@ -347,7 +347,11 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 
     <!-- OVERVIEW -->
     <div class="panel on" id="p-overview">
-      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">systemctl status collective && ./status.sh</span></div>
+      <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;border-left:3px solid var(--green)">
+        <div style="font-size:16px;font-weight:700;color:var(--green);letter-spacing:.05em">BR0THER-H00D</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">solana memecoin trading collective — unlimited agents — plug in any AI or run rule-based</div>
+      </div>
+      <div class="cmd-line"><span class="p">kazgar@BR0THER-H00D:~$ </span><span class="c">python3 start.py --status</span></div>
 
       <div class="irow" style="margin-bottom:14px">
         <span class="pre">endpoint →</span>
@@ -365,7 +369,7 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
       <div class="card">
         <div class="card-h"><span>open positions</span><span class="right" onclick="refreshStatus()" style="cursor:pointer">↺ refresh</span></div>
         <table class="tbl">
-          <thead><tr><th>token</th><th>strategy</th><th>amount SOL</th><th>pnl</th><th>status</th></tr></thead>
+          <thead><tr><th>token</th><th>strategy</th><th>size (USD)</th><th>pnl</th><th>status</th></tr></thead>
           <tbody id="pos-body"><tr><td colspan="5" style="color:var(--muted)">connect bot to see positions</td></tr></tbody>
         </table>
       </div>
@@ -377,116 +381,71 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 
     <!-- FREE DEPLOY GUIDE -->
     <div class="panel" id="p-deploy">
-      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">cat FREE_DEPLOY_GUIDE.md</span></div>
+      <div class="cmd-line"><span class="p">kazgar@BR0THER-H00D:~$ </span><span class="c">cat SETUP.md</span></div>
 
-      <div class="info-bar">🎉 Deploy for free — no credit card, no VPS cost. Takes ~10 minutes.</div>
+      <div class="info-bar">🤖 BR0THER-H00D — one command setup. Works with zero config. Add AI keys to go next level.</div>
 
       <div class="card">
-        <div class="card-h"><span>OPTION A — Railway.app</span><span class="free-badge">FREE</span></div>
-
+        <div class="card-h"><span>OPTION A — One-line install</span><span class="free-badge">EASIEST</span></div>
         <div class="step">
           <div class="step-n">1</div>
           <div class="step-body">
-            <div class="step-title">Push your bot to GitHub</div>
-            <div class="step-desc">Put these files in a GitHub repo: api.py, ai_router.py, trading.py, auth.py, requirements.txt</div>
-            <div class="code-block">pip freeze > requirements.txt
-git init && git add . && git commit -m "initial commit"
-gh repo create trading-bot --public --push</div>
+            <div class="step-title">Clone &amp; install</div>
+            <div class="step-desc">Copy and paste this into your terminal. Works on Ubuntu/Mac/WSL.</div>
+            <div class="code-block" onclick="navigator.clipboard.writeText(this.innerText)" style="cursor:pointer" title="click to copy">git clone https://github.com/yourname/BR0THER-H00D && cd BR0THER-H00D && bash install.sh</div>
+            <div class="step-desc" style="margin-top:4px;color:var(--muted)">👆 click to copy</div>
           </div>
         </div>
-
         <div class="step">
           <div class="step-n">2</div>
           <div class="step-body">
-            <div class="step-title">Deploy on Railway.app</div>
-            <div class="step-desc">Go to <strong style="color:var(--blue)">railway.app</strong> → New Project → Deploy from GitHub → pick your repo. It auto-detects Python.</div>
+            <div class="step-title">Run it</div>
+            <div class="code-block" onclick="navigator.clipboard.writeText(this.innerText)" style="cursor:pointer" title="click to copy">python3 start.py</div>
+            <div class="step-desc" style="margin-top:4px">That's it. Bot starts scanning immediately. No keys needed.</div>
           </div>
         </div>
-
         <div class="step">
           <div class="step-n">3</div>
           <div class="step-body">
-            <div class="step-title">Add your environment variables</div>
-            <div class="step-desc">In Railway → Variables tab, add these (only the ones you have keys for):</div>
-            <div class="code-block">ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-GROK_API_KEY=...
-GEMINI_API_KEY=...
-GROQ_API_KEY=gsk_...
-OPENROUTER_API_KEY=sk-or-...
-HELIUS_API_KEY=...
-WALLET_PRIVATE_KEY_B58=...</div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-n">4</div>
-          <div class="step-body">
-            <div class="step-title">Set the start command</div>
-            <div class="step-desc">In Railway → Settings → Start Command:</div>
-            <div class="code-block">uvicorn api:app --host 0.0.0.0 --port $PORT</div>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-n">5</div>
-          <div class="step-body">
-            <div class="step-title">Get your public URL</div>
-            <div class="step-desc">Railway gives you a URL like <strong style="color:var(--green)">https://yourapp.up.railway.app</strong>. Paste that in the endpoint field on overview tab and hit connect.</div>
+            <div class="step-title">Open dashboard</div>
+            <div class="code-block" onclick="navigator.clipboard.writeText(this.innerText)" style="cursor:pointer" title="click to copy">uvicorn brotha_api:app --host 0.0.0.0 --port 8000</div>
+            <div class="step-desc" style="margin-top:4px">Then go to <strong style="color:var(--green)">http://localhost:8000</strong> in your browser.</div>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-h"><span>OPTION B — Render.com</span><span class="free-badge">FREE</span></div>
-
-        <div class="step">
-          <div class="step-n">1</div>
-          <div class="step-body">
-            <div class="step-title">Same GitHub repo setup as above, then:</div>
-            <div class="step-desc">Go to <strong style="color:var(--blue)">render.com</strong> → New → Web Service → connect GitHub repo</div>
-          </div>
-        </div>
-        <div class="step">
-          <div class="step-n">2</div>
-          <div class="step-body">
-            <div class="step-title">Build & Start commands</div>
-            <div class="code-block">Build: pip install -r requirements.txt
-Start: uvicorn api:app --host 0.0.0.0 --port $PORT</div>
-            <div class="step-desc" style="margin-top:4px">Add env vars in the Environment tab. Free tier sleeps after 15min inactivity — use Railway if you want it always-on.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-h"><span>OPTION C — Local only (no deploy)</span></div>
-        <div class="step">
-          <div class="step-n">1</div>
-          <div class="step-body">
-            <div class="step-title">Run on your laptop, share via ngrok</div>
-            <div class="code-block">cd ~/trading-bot
-source venv/bin/activate
-uvicorn api:app --host 0.0.0.0 --port 8000
-
-# in another terminal:
-ngrok http 8000</div>
-            <div class="step-desc" style="margin-top:4px">ngrok gives you a public URL like <strong style="color:var(--green)">https://abc123.ngrok.io</strong> — free, no signup needed. Share that URL with people.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-h"><span>Host the dashboard HTML</span><span class="free-badge">FREE</span></div>
+        <div class="card-h"><span>OPTION B — Add AI (optional but powerful)</span></div>
         <div class="step">
           <div class="step-n">★</div>
           <div class="step-body">
-            <div class="step-title">Netlify drag-and-drop — 30 seconds</div>
-            <div class="step-desc">Go to <strong style="color:var(--blue)">netlify.com</strong> → Add new site → Deploy manually → drag this HTML file into the box. Done. Your users get a URL like <strong style="color:var(--green)">https://yourapp.netlify.app</strong>. They enter your Railway/Render URL as the endpoint.</div>
+            <div class="step-title">Add any AI key to .env</div>
+            <div class="step-desc">Bot works without AI. Add a key to unlock LLM reasoning on every trade.</div>
+            <div class="code-block"># FREE options (pick one or all):
+GROQ_API_KEY=gsk_...          # console.groq.com — free
+OPENROUTER_API_KEY=sk-or-...  # openrouter.ai — 100+ models
+
+# LOCAL (no API cost, fully private):
+# install ollama, run: ollama pull nous-hermes-2-mistral-7b</div>
           </div>
         </div>
       </div>
 
-      <div class="warn-bar">⚠ Security: each user's API keys stay in their own browser localStorage. They never touch your server. Your server only receives trade commands. Never hardcode private keys in your code.</div>
+      <div class="card">
+        <div class="card-h"><span>OPTION C — Live trading</span></div>
+        <div class="step">
+          <div class="step-n">⚠</div>
+          <div class="step-body">
+            <div class="step-title">Only after paper trading consistently profits</div>
+            <div class="code-block"># in .env:
+LIVE_MODE=true
+WALLET_PRIVATE_KEY=your_base58_key</div>
+            <div class="step-desc" style="margin-top:4px;color:var(--orange)">Export from Phantom: Settings → Security → Export Private Key. Start small ($10-20).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="warn-bar">⚠ Always paper trade first. This is experimental software. Never risk money you can't afford to lose.</div>
     </div>
 
     <!-- API KEYS -->
@@ -525,88 +484,62 @@ ngrok http 8000</div>
       </div>
 
       <div class="card">
-        <div class="card-h"><span>generate new wallet via bot</span><span class="badge bo">api required</span></div>
-        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">Creates a fresh Solana keypair through your running bot. Private key shown once — save it immediately.</div>
-        <button class="btn o" onclick="createWallet()">solana-keygen new</button>
+        <div class="card-h"><span>generate new wallet</span><span class="badge bg" style="background:rgba(109,186,74,.15);color:var(--green);border:1px solid var(--green2)">no api needed</span></div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">Generates a fresh Solana keypair locally in your browser. Nothing is sent anywhere. Save your private key immediately — it is shown once only.</div>
+        <button class="btn g" onclick="generateWalletLocal()">⚡ generate wallet locally</button>
         <div class="term" id="w-new-out" style="margin-top:10px;display:none"></div>
       </div>
     </div>
 
     <!-- AGENT COUNCIL -->
     <div class="panel" id="p-council">
-      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">./council --list-agents --add-any-ai</span></div>
+      <div class="cmd-line"><span class="p">br0ther@hood:~$ </span><span class="c">ls agents/trading/</span></div>
+
+      <div class="info-bar">🤖 Agents run automatically when you start the bot. Add AI keys in the Keys tab to unlock LLM reasoning.</div>
 
       <div class="card">
-        <div class="card-h"><span>add agent to council</span><span class="right">plug in any AI provider</span></div>
-
-        <div class="g2" style="margin-bottom:8px">
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">name</div>
-            <div class="irow" style="margin-bottom:0"><input type="text" id="ag-name" placeholder="hawk, degen, zen..."/></div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">provider</div>
-            <div class="irow" style="margin-bottom:0">
-              <select id="ag-prov" onchange="onProviderChange()">
-                <option value="claude">Claude (Anthropic)</option>
-                <option value="gpt">GPT-4o (OpenAI)</option>
-                <option value="grok">Grok (xAI)</option>
-                <option value="gemini">Gemini (Google)</option>
-                <option value="groq">Groq (fast)</option>
-                <option value="openrouter">OpenRouter</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="g2" style="margin-bottom:8px">
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">model</div>
-            <div class="irow" style="margin-bottom:0">
-              <select id="ag-model"></select>
-            </div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">trading thesis</div>
-            <div class="irow" style="margin-bottom:0">
-              <select id="ag-thesis">
-                <option value="momentum">momentum chaser</option>
-                <option value="dip_buy">dip buyer</option>
-                <option value="breakout">breakout hunter</option>
-                <option value="whale_follow">whale follower</option>
-                <option value="ai">AI holistic</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="g3" style="margin-bottom:10px">
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">position size (SOL)</div>
-            <div class="irow" style="margin-bottom:0"><input type="number" id="ag-size" value="0.05" step="0.01" min="0.01"/></div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">vote weight</div>
-            <div class="irow" style="margin-bottom:0"><input type="number" id="ag-weight" value="1" min="1" max="5"/></div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">buy threshold %</div>
-            <div class="irow" style="margin-bottom:0"><input type="number" id="ag-threshold" value="60" min="50" max="90"/></div>
-          </div>
-        </div>
-
-        <div id="ag-key-warn" style="font-size:11px;color:var(--orange);margin-bottom:8px;display:none">⚠ No API key found for this provider — add it in the Keys tab first</div>
-
-        <button class="btn g" onclick="addAgent()">+ add to council</button>
+        <div class="card-h"><span>add custom agent</span><span class="right" style="color:var(--muted);font-size:10px">drop .py file in agents/trading/</span></div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">Create any Python file in <span style="color:var(--green)">agents/trading/</span> and it auto-loads on next start. Use existing agents as templates.</div>
+        <div class="code-block" style="margin-bottom:8px"># example: agents/trading/my_agent.py
+def run():
+    while True:
+        # your logic here
+        time.sleep(30)</div>
+        <div style="font-size:11px;color:var(--muted)">Or add an AI provider key in the Keys tab — the Analyst agent will automatically use it.</div>
       </div>
 
-      <div class="div">active council <span id="council-count" style="color:var(--green)">0 agents</span></div>
-      <div id="agents-list"><div style="color:var(--muted);font-size:11px;padding:8px 0">no agents yet — add your first AI above</div></div>
+      <div class="div">built-in agents <span style="color:var(--green)">always active</span></div>
+      <div id="agents-list">
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🔍 Scanner</div><div style="font-size:10px;color:var(--muted)">hunts tokens every 45s across all sources</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">📈 Trader</div><div style="font-size:10px;color:var(--muted)">executes trades with tiered exits</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🛡️ Risk Manager</div><div style="font-size:10px;color:var(--muted)">enforces daily limits and vetoes bad trades</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">💊 Pump Hunter</div><div style="font-size:10px;color:var(--muted)">finds early pump.fun gems under 2h old</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🧠 Memory Keeper</div><div style="font-size:10px;color:var(--muted)">logs learnings every 5 mins</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🐋 Whale Tracker</div><div style="font-size:10px;color:var(--muted)">watches smart wallet moves</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card"><div><div style="font-size:12px;color:var(--text)">🤖 Analyst (AI)</div><div style="font-size:10px;color:var(--muted)">LLM reasoning — add Groq/OpenRouter key to activate</div></div><div style="font-size:10px;color:var(--orange)">optional</div></div>
+      </div>
 
       <div style="display:flex;gap:8px;margin-top:12px">
         <button class="btn g" onclick="councilVoteNow()">▶ run council vote now</button>
         <button class="btn r" onclick="clearAllAgents()">clear council</button>
       </div>
+
+      <div class="div" style="margin-top:16px">custom agents <span style="color:var(--muted);font-size:10px">optional — system agents unchanged</span></div>
+
+      <div class="card" style="margin-top:8px">
+        <div class="card-h"><span>add custom agent</span></div>
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:6px">Give it a name and describe what it should do. It will be saved and available on next run.</div>
+        <div class="irow" style="margin-bottom:8px">
+          <span class="pre">name</span>
+          <input type="text" id="ca-name" placeholder="degen_hunter, news_watcher..."/>
+        </div>
+        <div style="margin-bottom:8px">
+          <textarea id="ca-task" placeholder="Describe this agent's job e.g. Watch for coins mentioned on crypto twitter and flag them as high priority..." style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:var(--mono);font-size:11px;padding:8px;resize:vertical;min-height:60px;outline:none"></textarea>
+        </div>
+        <button class="btn g" onclick="saveCustomAgent()">+ save agent</button>
+      </div>
+
+      <div id="custom-agents-list" style="margin-top:8px"></div>
 
       <div class="term" id="council-out" style="margin-top:10px;display:none"></div>
     </div>
@@ -1301,6 +1234,156 @@ document.addEventListener('click', function(e) {
     menu.classList.remove('open');
   }
 });
+
+
+function generateWalletLocal() {
+    // Generate 32 random bytes for the private key seed
+    const seed = crypto.getRandomValues(new Uint8Array(32));
+    // Simple base58 encoding
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    function toBase58(bytes) {
+        let d = [], s = '', i, j, c, carry;
+        for (i = 0; i < bytes.length; i++) {
+            j = 0; carry = bytes[i];
+            while (j < d.length || carry) {
+                if (j < d.length) { carry += d[j] << 8; d[j] = carry % 58; carry = (carry / 58) | 0; }
+                else { d.push(carry % 58); carry = (carry / 58) | 0; }
+                j++;
+            }
+        }
+        for (i = 0; i < bytes.length && bytes[i] === 0; i++) s += ALPHABET[0];
+        for (i = d.length - 1; i >= 0; i--) s += ALPHABET[d[i]];
+        return s;
+    }
+    const privKeyB58 = toBase58(seed);
+    const out = document.getElementById('w-new-out');
+    out.style.display = 'block';
+    out.innerHTML = `<span style="color:var(--green)">✅ New wallet generated</span>
+
+<span style="color:var(--muted2)">Private key (base58) — SAVE THIS NOW, shown once:</span>
+<span style="color:var(--orange);word-break:break-all;user-select:all">${privKeyB58}</span>
+
+<span style="color:var(--muted2)">Add to your .env:</span>
+<span style="color:var(--text);user-select:all">WALLET_PRIVATE_KEY=${privKeyB58}</span>
+
+<span style="color:var(--red)">⚠ Never share your private key. Close this tab after saving.</span>`;
+}
+
+
+async function saveCustomAgent() {
+    const name = document.getElementById('ca-name').value.trim();
+    const task = document.getElementById('ca-task').value.trim();
+    if (!name || !task) { toast('enter a name and task'); return; }
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) { toast('connect bot first'); return; }
+    try {
+        const r = await fetch(url + '/agents/custom', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, task})
+        });
+        if (r.ok) {
+            toast('✅ agent saved: ' + name);
+            document.getElementById('ca-name').value = '';
+            document.getElementById('ca-task').value = '';
+            loadCustomAgents();
+        }
+    } catch(e) { toast('error: ' + e.message); }
+}
+
+async function loadCustomAgents() {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        const r = await fetch(url + '/agents/custom');
+        const data = await r.json();
+        const el = document.getElementById('custom-agents-list');
+        if (!data.agents || data.agents.length === 0) {
+            el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px 0">no custom agents yet</div>';
+            return;
+        }
+        el.innerHTML = data.agents.map(a => `
+            <div class="agent-card" style="margin-bottom:6px">
+                <div>
+                    <div style="font-size:12px;color:var(--text)">⚙️ ${a.name}</div>
+                    <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.task.substring(0, 80)}${a.task.length > 80 ? '...' : ''}</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center">
+                    <span style="font-size:10px;color:var(--green)">${a.enabled ? 'active' : 'off'}</span>
+                    <button class="ibtn" onclick="deleteCustomAgent('${a.name}')" style="font-size:10px;color:var(--red)">✕</button>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+async function deleteCustomAgent(name) {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        await fetch(url + '/agents/custom/' + name, {method: 'DELETE'});
+        toast('removed: ' + name);
+        loadCustomAgents();
+    } catch(e) { toast('error'); }
+}
+
+
+async function saveCustomAgent() {
+    const name = document.getElementById('ca-name').value.trim();
+    const task = document.getElementById('ca-task').value.trim();
+    if (!name || !task) { toast('enter a name and task'); return; }
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) { toast('connect bot first'); return; }
+    try {
+        const r = await fetch(url + '/agents/custom', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, task})
+        });
+        if (r.ok) {
+            toast('✅ agent saved: ' + name);
+            document.getElementById('ca-name').value = '';
+            document.getElementById('ca-task').value = '';
+            loadCustomAgents();
+        }
+    } catch(e) { toast('error: ' + e.message); }
+}
+
+async function loadCustomAgents() {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        const r = await fetch(url + '/agents/custom');
+        const data = await r.json();
+        const el = document.getElementById('custom-agents-list');
+        if (!data.agents || data.agents.length === 0) {
+            el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px 0">no custom agents yet</div>';
+            return;
+        }
+        el.innerHTML = data.agents.map(a => `
+            <div class="agent-card" style="margin-bottom:6px">
+                <div>
+                    <div style="font-size:12px;color:var(--text)">⚙️ ${a.name}</div>
+                    <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.task.substring(0, 80)}${a.task.length > 80 ? '...' : ''}</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center">
+                    <span style="font-size:10px;color:var(--green)">${a.enabled ? 'active' : 'off'}</span>
+                    <button class="ibtn" onclick="deleteCustomAgent('${a.name}')" style="font-size:10px;color:var(--red)">✕</button>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+async function deleteCustomAgent(name) {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        await fetch(url + '/agents/custom/' + name, {method: 'DELETE'});
+        toast('removed: ' + name);
+        loadCustomAgents();
+    } catch(e) { toast('error'); }
+}
 
 </script>
 </body>
