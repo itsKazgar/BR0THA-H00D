@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>BR0THER-H00D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#111214;--bg2:#161819;--bg3:#1c1e20;--bg4:#222426;
+  --border:#2a2c2e;--border2:#333537;
+  --text:#ddd8d0;--muted:#585450;--muted2:#7a7672;
+  --green:#6dba4a;--green2:#4a8a30;--glow:rgba(109,186,74,.15);
+  --orange:#e09040;--red:#c04040;--blue:#4a8acc;--purple:#9a6ac0;
+  --yellow:#d0b040;
+  --prompt:#e09040;
+  --mono:'Ubuntu Mono',monospace;
+  --sans:'Ubuntu',sans-serif;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:0px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:transparent;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--border2)}
+.panel:hover::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* TITLEBAR */
+.tb{height:38px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:7px;user-select:none;flex-shrink:0}
+.tb-title{margin-left:10px;font-size:11px;color:var(--muted2);letter-spacing:.03em}
+.tb-r{margin-left:auto;font-size:11px;color:var(--muted2);display:flex;align-items:center;gap:12px}
+#tb-time{color:var(--text);font-weight:700}
+
+/* SHELL */
+.shell{display:grid;grid-template-columns:210px 1fr;height:calc(100vh - 38px)}
+
+/* SIDEBAR */
+.sb{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sb-top{padding:10px 16px 8px;border-bottom:1px solid var(--border)}
+.sb-prompt{font-size:10px;color:var(--muted2);margin-bottom:3px}
+.sb-conn{margin-top:8px;padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;font-size:10px;display:flex;align-items:center;gap:6px;cursor:pointer}
+.sb-conn:hover{border-color:var(--border2)}
+#conn-dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0;transition:background .3s}
+#conn-dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+#conn-dot.warn{background:var(--orange)}
+#conn-text{color:var(--muted2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.sb-sec{padding:10px 16px 3px;font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.nav{display:flex;align-items:center;gap:8px;padding:5px 16px;font-size:12px;color:var(--muted2);cursor:pointer;border-left:2px solid transparent;transition:all .12s;white-space:nowrap}
+.nav:hover{color:var(--text);background:#1e2022}
+.nav.on{color:var(--green);border-left-color:var(--green);background:rgba(109,186,74,.06)}
+.nav-ic{width:14px;text-align:center;font-size:12px;opacity:.7}
+.nav.on .nav-ic{opacity:1}
+
+.sb-bot{margin-top:auto;padding:10px 16px;border-top:1px solid var(--border);font-size:10px;color:var(--muted)}
+.council-status{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+#council-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+#council-dot.on{background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* MAIN */
+.main{display:flex;flex-direction:column;overflow:hidden}
+
+/* TABBAR */
+.tabs{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 6px;gap:2px;min-height:33px;align-items:flex-end;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
+.tab{padding:5px 13px;font-size:11px;color:var(--muted);cursor:pointer;border:1px solid transparent;border-bottom:none;border-radius:2px 2px 0 0;font-family:var(--mono);transition:all .1s;flex-shrink:0;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--text);background:var(--bg);border-color:var(--border)}
+
+/* PANELS */
+.panels{flex:1;overflow:hidden;position:relative}
+.panel{display:none;height:100%;overflow-y:auto;padding:18px 22px;scroll-behavior:smooth}
+.panel.on{display:block}
+
+/* COMMON */
+.cmd-line{font-size:11px;color:var(--muted2);margin-bottom:14px}
+.cmd-line .p{color:var(--prompt)}.cmd-line .c{color:var(--blue)}
+.warn-bar{background:rgba(224,144,64,.08);border:1px solid rgba(224,144,64,.25);border-radius:2px;padding:6px 12px;font-size:11px;color:var(--orange);margin-bottom:14px}
+.info-bar{background:rgba(74,138,204,.08);border:1px solid rgba(74,138,204,.25);border-radius:2px;padding:6px 12px;font-size:11px;color:var(--blue);margin-bottom:14px}
+
+/* INPUT ROW */
+.irow{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:10px}
+.irow .pre{padding:6px 10px;color:var(--prompt);font-size:11px;border-right:1px solid var(--border);background:var(--bg4);white-space:nowrap;flex-shrink:0}
+.irow input,.irow select{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12px;padding:6px 10px;min-width:0}
+.irow select option{background:var(--bg3)}
+.irow input::placeholder{color:var(--muted)}
+.irow .ibtn{padding:6px 13px;background:var(--bg4);border:none;border-left:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.irow .ibtn:hover{background:#2a2c2e;color:var(--green)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:10px 13px}
+.stat-k{font-size:9px;color:var(--muted2);letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
+.stat-v{font-size:20px;font-weight:700;color:var(--text)}
+.stat-v.g{color:var(--green)}.stat-v.o{color:var(--orange)}.stat-v.r{color:var(--red)}
+.stat-s{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* CARD */
+.card{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:13px 15px;margin-bottom:10px}
+.card-h{font-size:10px;color:var(--muted2);border-bottom:1px solid var(--border);padding-bottom:7px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;letter-spacing:.05em}
+.card-h .right{font-size:10px;color:var(--muted)}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:5px 10px;color:var(--muted2);font-size:9px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border);font-weight:400}
+.tbl td{padding:6px 10px;border-bottom:1px solid #1e2022;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#1e2022}
+
+/* TERM */
+.term{background:#0c0d0e;border:1px solid var(--border);border-radius:2px;padding:10px 13px;font-size:12px;color:var(--green);min-height:60px;white-space:pre-wrap;line-height:1.65;margin-bottom:10px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:transparent transparent}.term:hover{scrollbar-color:var(--border2) transparent}
+.term .e{color:var(--red)}.term .w{color:var(--orange)}.term .m{color:var(--muted2)}.term .b{color:var(--blue)}
+
+/* BADGE */
+.badge{display:inline-block;font-size:10px;padding:1px 7px;border-radius:2px;border:1px solid}
+.bg{border-color:#2a5a1a;background:rgba(74,138,48,.12);color:var(--green)}
+.bo{border-color:#5a3a10;background:rgba(224,144,64,.1);color:var(--orange)}
+.br{border-color:#5a1a1a;background:rgba(192,64,64,.1);color:var(--red)}
+.bb{border-color:#1a3a5a;background:rgba(74,138,204,.1);color:var(--blue)}
+.bm{border-color:var(--border2);color:var(--muted2)}
+.bp{border-color:#3a1a5a;background:rgba(154,106,192,.1);color:var(--purple)}
+
+/* TOGGLE */
+.tog{position:relative;display:inline-block;width:34px;height:17px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tsl{position:absolute;inset:0;background:#1e2022;border:1px solid var(--border);border-radius:2px;cursor:pointer;transition:.15s}
+.tsl:before{content:'';position:absolute;width:9px;height:9px;left:3px;top:3px;background:var(--muted);border-radius:1px;transition:.15s}
+input:checked+.tsl{background:rgba(109,186,74,.12);border-color:var(--green)}
+input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
+
+/* BTN */
+.btn{font-family:var(--mono);font-size:12px;padding:6px 13px;background:transparent;border:1px solid var(--border);color:var(--text);cursor:pointer;border-radius:2px;transition:all .12s}
+.btn:hover{border-color:var(--border2);color:var(--green)}
+.btn.g{border-color:var(--green);color:var(--green)}.btn.g:hover{background:rgba(109,186,74,.1)}
+.btn.r{border-color:var(--red);color:var(--red)}.btn.r:hover{background:rgba(192,64,64,.1)}
+.btn.o{border-color:var(--orange);color:var(--orange)}.btn.o:hover{background:rgba(224,144,64,.1)}
+.btn.b{border-color:var(--blue);color:var(--blue)}.btn.b:hover{background:rgba(74,138,204,.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* GRID */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* DIVIDER */
+.div{font-size:9px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;padding-bottom:5px;border-bottom:1px solid var(--border);margin:14px 0 8px}
+
+/* AGENT CARD */
+.agent-card{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:11px 13px;margin-bottom:7px;display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;transition:border-color .15s}
+.agent-card:hover{border-color:var(--border2)}
+.agent-card.active{border-left:2px solid var(--green)}
+.ag-name{font-weight:700;font-size:12px;color:var(--text);margin-bottom:2px}
+.ag-meta{font-size:10px;color:var(--muted2);display:flex;gap:8px;flex-wrap:wrap;margin-top:3px}
+.ag-controls{display:flex;align-items:center;gap:8px}
+
+/* VOTE ROW */
+.vote-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #1a1c1e}
+.vote-row:last-child{border-bottom:none}
+.vr-dec{width:40px;font-size:11px;font-weight:700}
+.vr-dec.buy{color:var(--green)}.vr-dec.sell{color:var(--red)}.vr-dec.hold{color:var(--orange)}
+.vr-bar{flex:1;height:4px;background:#1a1c1e;border-radius:2px;overflow:hidden}
+.vr-fill{height:100%;border-radius:2px;transition:width .4s}
+.vr-fill.buy{background:var(--green)}.vr-fill.sell{background:var(--red)}.vr-fill.hold{background:var(--orange)}
+.vr-pct{width:35px;text-align:right;font-size:11px;color:var(--muted2)}
+.vr-agent{font-size:10px;color:var(--muted2);width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* PW */
+.pw-w{position:relative;flex:1;min-width:0}
+.pw-w input{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--mono);font-size:12px;padding:6px 32px 6px 10px}
+.pw-eye{position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--muted);font-size:10px;user-select:none}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;background:var(--bg3);border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:2px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9999;max-width:300px}
+.toast.err{border-color:var(--red);color:var(--red)}
+.toast.show{opacity:1}
+
+/* DEPLOY GUIDE */
+.step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.step-n{width:22px;height:22px;border-radius:50%;background:rgba(109,186,74,.15);border:1px solid var(--green);color:var(--green);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.step-body{flex:1}
+.step-title{font-size:12px;font-weight:700;color:var(--text);margin-bottom:3px}
+.step-desc{font-size:11px;color:var(--muted2);line-height:1.6}
+.code-block{background:#0c0d0e;border:1px solid var(--border);border-radius:2px;padding:8px 12px;font-size:11px;color:var(--blue);margin:6px 0;white-space:pre-wrap;line-height:1.6;cursor:pointer;position:relative}
+.code-block:hover{border-color:var(--border2)}
+.code-block::after{content:'click to copy';position:absolute;right:8px;top:6px;font-size:9px;color:var(--muted);letter-spacing:.05em}
+
+.free-badge{display:inline-block;background:rgba(109,186,74,.12);border:1px solid var(--green);color:var(--green);font-size:9px;padding:1px 6px;border-radius:2px;letter-spacing:.06em;vertical-align:middle;margin-left:6px}
+
+/* ── MOBILE ─────────────────────────────────────────────────────────────────── */
+@media(max-width:768px){
+  html,body{overflow:hidden;height:100%;height:100dvh}
+
+  /* hide desktop sidebar */
+  .sb{display:none}
+
+  /* hide desktop tabbar */
+  .tabs{display:none}
+
+  /* title bar simplified */
+  .tb-title{display:none}
+  .tb{padding:0 10px}
+
+  /* full width main */
+  .shell{grid-template-columns:1fr;height:calc(100dvh - 38px)}
+
+  /* panels take full height minus bottom nav */
+  .panels{height:calc(100dvh - 38px - 56px)}
+  .panel{padding:12px 14px 70px 14px;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  /* stats 2 col on mobile */
+  .stats{grid-template-columns:1fr 1fr;gap:6px}
+  .stat{padding:8px 10px}
+  .stat-v{font-size:16px}
+
+  /* grids stack on mobile */
+  .g2,.g3{grid-template-columns:1fr}
+
+  /* make inputs bigger for touch */
+  .irow input,.irow select{font-size:14px;padding:8px 10px}
+  .irow .ibtn{padding:8px 13px;font-size:12px}
+  .btn{padding:8px 13px;font-size:12px}
+
+  /* card padding tighter */
+  .card{padding:10px 12px}
+
+  /* term smaller */
+  .term{font-size:11px}
+
+  /* toast above bottom nav */
+  .toast{bottom:66px;right:10px;left:10px;max-width:none;text-align:center}
+
+  /* connect modal full width */
+  #connect-modal > div{width:95vw !important}
+
+  /* agent card stack */
+  .agent-card{grid-template-columns:1fr auto}
+
+  /* code block scroll */
+  .code-block{overflow-x:auto;font-size:10px}
+
+  /* table scroll */
+  .tbl{font-size:11px}
+  .tbl th,.tbl td{padding:5px 6px}
+
+  /* BOTTOM NAV */
+  .mob-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;
+    height:56px;background:var(--bg2);border-top:1px solid var(--border);
+    z-index:100;
+  }
+  .mob-nav-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:2px;font-size:9px;color:var(--muted2);
+    cursor:pointer;border:none;background:none;font-family:var(--mono);
+    padding:0;transition:color .12s;
+  }
+  .mob-nav-item.on{color:var(--green)}
+  .mob-nav-item span.ic{font-size:16px;line-height:1}
+  .mob-nav-item span.lb{font-size:8px;letter-spacing:.04em}
+
+  /* MORE MENU */
+  .mob-more{
+    display:none;position:fixed;bottom:56px;left:0;right:0;
+    background:var(--bg2);border-top:1px solid var(--border);
+    z-index:99;padding:8px 0;
+  }
+  .mob-more.open{display:block}
+  .mob-more-item{
+    padding:10px 20px;font-size:12px;color:var(--muted2);
+    cursor:pointer;display:flex;align-items:center;gap:10px;
+  }
+  .mob-more-item:hover,.mob-more-item.on{color:var(--green);background:rgba(109,186,74,.06)}
+}
+
+/* hide bottom nav on desktop */
+@media(min-width:769px){
+  .mob-nav{display:none}
+  .mob-more{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- TITLEBAR -->
+<div class="tb">
+  
+  
+  <div class="tb-r">
+    <span id="tb-time">00:00:00</span>
+    
+  </div>
+</div>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sb">
+  <div class="sb-top">
+    
+    <div class="sb-conn" onclick="showConnect()">
+      <div id="conn-dot"></div>
+      <div id="conn-text">endpoint: not set</div>
+    </div>
+  </div>
+
+  <div class="sb-sec">system</div>
+  <div class="nav on" onclick="go('overview')" id="n-overview"><span class="nav-ic">$</span>overview</div>
+  <div class="nav" onclick="go('deploy')" id="n-deploy"><span class="nav-ic">🚀</span>free deploy</div>
+  <div class="nav" onclick="go('keys')" id="n-keys"><span class="nav-ic">🔑</span>api keys</div>
+  <div class="nav" onclick="go('wallet')" id="n-wallet"><span class="nav-ic">◎</span>wallet</div>
+
+  <div class="sb-sec">council</div>
+  <div class="nav" onclick="go('council')" id="n-council"><span class="nav-ic">⬡</span>agents <span id="agent-count" style="margin-left:auto;font-size:10px;color:var(--muted)">0</span></div>
+  <div class="nav" onclick="go('votes')" id="n-votes"><span class="nav-ic">◈</span>vote log</div>
+
+  <div class="sb-sec">trading</div>
+  <div class="nav" onclick="go('trade')" id="n-trade"><span class="nav-ic">⇄</span>swap</div>
+  <div class="nav" onclick="go('market')" id="n-market"><span class="nav-ic">↑</span>market</div>
+
+  <div class="sb-sec">tools</div>
+  <div class="nav" onclick="go('logs')" id="n-logs"><span class="nav-ic">▸</span>logs</div>
+
+  <div class="sb-bot">
+    <div class="council-status">
+      <div id="council-dot"></div>
+      <span id="council-status-text">agents idle</span>
+    </div>
+    <div style="color:var(--muted);font-size:9px" id="last-vote-time">no votes yet</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="tabs">
+    <div class="tab on" onclick="go('overview')" id="t-overview">overview</div>
+    <div class="tab" onclick="go('deploy')" id="t-deploy">🚀 free deploy</div>
+    <div class="tab" onclick="go('keys')" id="t-keys">keys</div>
+    <div class="tab" onclick="go('wallet')" id="t-wallet">wallet</div>
+    <div class="tab" onclick="go('council')" id="t-council">agents</div>
+    <div class="tab" onclick="go('votes')" id="t-votes">votes</div>
+    <div class="tab" onclick="go('trade')" id="t-trade">swap</div>
+    <div class="tab" onclick="go('market')" id="t-market">market</div>
+    <div class="tab" onclick="go('logs')" id="t-logs">logs</div>
+  </div>
+
+  <div class="panels">
+
+    <!-- OVERVIEW -->
+    <div class="panel on" id="p-overview">
+      <div style="margin-bottom:14px;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:2px;border-left:3px solid var(--green)">
+        <div style="font-size:16px;font-weight:700;color:var(--green);letter-spacing:.05em">BR0THER-H00D</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">solana memecoin trading collective — unlimited agents — plug in any AI or run rule-based</div>
+      </div>
+      <div class="cmd-line"><span class="p">kazgar@BR0THER-H00D:~$ </span><span class="c">python3 start.py --status</span></div>
+
+      <div class="irow" style="margin-bottom:14px">
+        <span class="pre">endpoint →</span>
+        <input type="text" id="api-url" placeholder="http://localhost:8000 or https://your-app.railway.app"/>
+        <button class="ibtn" onclick="connectBot()">connect</button>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="stat-k">SOL balance</div><div class="stat-v g" id="s-bal">—</div><div class="stat-s" id="s-bal-usd">—</div></div>
+        <div class="stat"><div class="stat-k">open trades</div><div class="stat-v" id="s-trades">—</div><div class="stat-s">max 3 concurrent</div></div>
+        <div class="stat"><div class="stat-k">active agents</div><div class="stat-v g" id="s-agents">0</div><div class="stat-s">in council</div></div>
+        <div class="stat"><div class="stat-k">bot status</div><div class="stat-v" id="s-state" style="font-size:14px">offline</div><div class="stat-s" id="s-uptime">—</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>open positions</span><span class="right" onclick="refreshStatus()" style="cursor:pointer">↺ refresh</span></div>
+        <table class="tbl">
+          <thead><tr><th>token</th><th>strategy</th><th>size (USD)</th><th>pnl</th><th>status</th></tr></thead>
+          <tbody id="pos-body"><tr><td colspan="5" style="color:var(--muted)">connect bot to see positions</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="term" id="status-out"><span class="m">waiting for connection...</span>
+
+<span class="m"># tip: if you haven't deployed yet, click the 🚀 free deploy tab</span></div>
+    </div>
+
+    <!-- FREE DEPLOY GUIDE -->
+    <div class="panel" id="p-deploy">
+      <div class="cmd-line"><span class="p">kazgar@BR0THER-H00D:~$ </span><span class="c">cat SETUP.md</span></div>
+
+      <div class="info-bar">🤖 BR0THER-H00D — one command setup. Works with zero config. Add AI keys to go next level.</div>
+
+      <div class="card">
+        <div class="card-h"><span>OPTION A — One-line install</span><span class="free-badge">EASIEST</span></div>
+        <div class="step">
+          <div class="step-n">1</div>
+          <div class="step-body">
+            <div class="step-title">Clone &amp; install</div>
+            <div class="step-desc">Copy and paste this into your terminal. Works on Ubuntu/Mac/WSL.</div>
+            <div class="code-block" onclick="navigator.clipboard.writeText(this.innerText)" style="cursor:pointer" title="click to copy">git clone https://github.com/yourname/BR0THER-H00D && cd BR0THER-H00D && bash install.sh</div>
+            <div class="step-desc" style="margin-top:4px;color:var(--muted)">👆 click to copy</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <div class="step-body">
+            <div class="step-title">Run it</div>
+            <div class="code-block" onclick="navigator.clipboard.writeText(this.innerText)" style="cursor:pointer" title="click to copy">python3 start.py</div>
+            <div class="step-desc" style="margin-top:4px">That's it. Bot starts scanning immediately. No keys needed.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <div class="step-body">
+            <div class="step-title">Open dashboard</div>
+            <div class="code-block" onclick="navigator.clipboard.writeText(this.innerText)" style="cursor:pointer" title="click to copy">uvicorn brotha_api:app --host 0.0.0.0 --port 8000</div>
+            <div class="step-desc" style="margin-top:4px">Then go to <strong style="color:var(--green)">http://localhost:8000</strong> in your browser.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>OPTION B — Add AI (optional but powerful)</span></div>
+        <div class="step">
+          <div class="step-n">★</div>
+          <div class="step-body">
+            <div class="step-title">Add any AI key to .env</div>
+            <div class="step-desc">Bot works without AI. Add a key to unlock LLM reasoning on every trade.</div>
+            <div class="code-block"># FREE options (pick one or all):
+GROQ_API_KEY=gsk_...          # console.groq.com — free
+OPENROUTER_API_KEY=sk-or-...  # openrouter.ai — 100+ models
+
+# LOCAL (no API cost, fully private):
+# install ollama, run: ollama pull nous-hermes-2-mistral-7b</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>OPTION C — Live trading</span></div>
+        <div class="step">
+          <div class="step-n">⚠</div>
+          <div class="step-body">
+            <div class="step-title">Only after paper trading consistently profits</div>
+            <div class="code-block"># in .env:
+LIVE_MODE=true
+WALLET_PRIVATE_KEY=your_base58_key</div>
+            <div class="step-desc" style="margin-top:4px;color:var(--orange)">Export from Phantom: Settings → Security → Export Private Key. Start small ($10-20).</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="warn-bar">⚠ Always paper trade first. This is experimental software. Never risk money you can't afford to lose.</div>
+    </div>
+
+    <!-- API KEYS -->
+    <div class="panel" id="p-keys">
+      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">nano .env  # keys saved locally in your browser only</span></div>
+      <div class="warn-bar">⚠ Keys saved in your browser localStorage only — never sent anywhere except your own bot's /keys endpoint when you click "push to bot"</div>
+
+      <div class="div">AI providers</div>
+
+      <div id="keys-grid"></div>
+
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn g" onclick="saveAllKeys()">save all locally</button>
+        <button class="btn" onclick="pushKeysToBot()">push to bot .env →</button>
+      </div>
+    </div>
+
+    <!-- WALLET -->
+    <div class="panel" id="p-wallet">
+      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">solana balance --keypair wallet.json</span></div>
+      <div class="warn-bar">⚠ Only your PUBLIC address goes here — never paste private keys into any UI</div>
+
+      <div class="card">
+        <div class="card-h"><span>wallet address</span></div>
+        <div class="irow">
+          <span class="pre">◎</span>
+          <input type="text" id="w-addr" placeholder="your Solana public key (base58)"/>
+          <button class="ibtn" onclick="saveWallet()">save</button>
+        </div>
+        <div id="w-status" style="font-size:11px;color:var(--muted)">no wallet set</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>balance</span><span class="right" onclick="checkBalance()" style="cursor:pointer">↺ check</span></div>
+        <div id="bal-out" style="font-size:13px;color:var(--muted)">—</div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>generate new wallet</span><span class="badge bg" style="background:rgba(109,186,74,.15);color:var(--green);border:1px solid var(--green2)">no api needed</span></div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">Generates a fresh Solana keypair locally in your browser. Nothing is sent anywhere. Save your private key immediately — it is shown once only.</div>
+        <button class="btn g" onclick="generateWalletLocal()">⚡ generate wallet locally</button>
+        <div class="term" id="w-new-out" style="margin-top:10px;display:none"></div>
+      </div>
+    </div>
+
+    <!-- AGENT COUNCIL -->
+    <div class="panel" id="p-council">
+      <div class="cmd-line"><span class="p">br0ther@hood:~$ </span><span class="c">ls agents/trading/</span></div>
+
+      <div class="info-bar">🤖 Agents run automatically when you start the bot. Add AI keys in the Keys tab to unlock LLM reasoning.</div>
+
+      <div class="card">
+        <div class="card-h"><span>add custom agent</span><span class="right" style="color:var(--muted);font-size:10px">drop .py file in agents/trading/</span></div>
+        <div style="font-size:11px;color:var(--muted2);margin-bottom:10px">Create any Python file in <span style="color:var(--green)">agents/trading/</span> and it auto-loads on next start. Use existing agents as templates.</div>
+        <div class="code-block" style="margin-bottom:8px"># example: agents/trading/my_agent.py
+def run():
+    while True:
+        # your logic here
+        time.sleep(30)</div>
+        <div style="font-size:11px;color:var(--muted)">Or add an AI provider key in the Keys tab — the Analyst agent will automatically use it.</div>
+      </div>
+
+      <div class="div">built-in agents <span style="color:var(--green)">always active</span></div>
+      <div id="agents-list">
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🔍 Scanner</div><div style="font-size:10px;color:var(--muted)">hunts tokens every 45s across all sources</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">📈 Trader</div><div style="font-size:10px;color:var(--muted)">executes trades with tiered exits</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🛡️ Risk Manager</div><div style="font-size:10px;color:var(--muted)">enforces daily limits and vetoes bad trades</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">💊 Pump Hunter</div><div style="font-size:10px;color:var(--muted)">finds early pump.fun gems under 2h old</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🧠 Memory Keeper</div><div style="font-size:10px;color:var(--muted)">logs learnings every 5 mins</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card active"><div><div style="font-size:12px;color:var(--text)">🐋 Whale Tracker</div><div style="font-size:10px;color:var(--muted)">watches smart wallet moves</div></div><div style="font-size:10px;color:var(--green)">active</div></div>
+        <div class="agent-card"><div><div style="font-size:12px;color:var(--text)">🤖 Analyst (AI)</div><div style="font-size:10px;color:var(--muted)">LLM reasoning — add Groq/OpenRouter key to activate</div></div><div style="font-size:10px;color:var(--orange)">optional</div></div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn g" onclick="councilVoteNow()">▶ run council vote now</button>
+        <button class="btn r" onclick="clearAllAgents()">clear council</button>
+      </div>
+
+      <div class="div" style="margin-top:16px">custom agents <span style="color:var(--muted);font-size:10px">optional — system agents unchanged</span></div>
+
+      <div class="card" style="margin-top:8px">
+        <div class="card-h"><span>add custom agent</span></div>
+        <div style="font-size:10px;color:var(--muted2);margin-bottom:6px">Give it a name and describe what it should do. It will be saved and available on next run.</div>
+        <div class="irow" style="margin-bottom:8px">
+          <span class="pre">name</span>
+          <input type="text" id="ca-name" placeholder="degen_hunter, news_watcher..."/>
+        </div>
+        <div style="margin-bottom:8px">
+          <textarea id="ca-task" placeholder="Describe this agent's job e.g. Watch for coins mentioned on crypto twitter and flag them as high priority..." style="width:100%;background:var(--bg4);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:var(--mono);font-size:11px;padding:8px;resize:vertical;min-height:60px;outline:none"></textarea>
+        </div>
+        <button class="btn g" onclick="saveCustomAgent()">+ save agent</button>
+      </div>
+
+      <div id="custom-agents-list" style="margin-top:8px"></div>
+
+      <div class="term" id="council-out" style="margin-top:10px;display:none"></div>
+    </div>
+
+    <!-- VOTES -->
+    <div class="panel" id="p-votes">
+      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">./council --show-votes --last=20</span></div>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn g" onclick="councilVoteNow()">▶ trigger vote now</button>
+        <button class="btn" onclick="loadVotes()">↺ refresh</button>
+        <button class="btn r" onclick="clearVotes()">clear log</button>
+      </div>
+
+      <div class="card" id="vote-summary" style="display:none">
+        <div class="card-h"><span>last vote result</span><span class="right" id="vote-ts">—</span></div>
+        <div id="vote-tally" style="margin-bottom:10px"></div>
+        <div id="vote-details"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>vote history</span></div>
+        <div id="vote-log"><div style="color:var(--muted);font-size:11px">no votes logged yet — add agents and run a vote</div></div>
+      </div>
+    </div>
+
+    <!-- TRADE -->
+    <div class="panel" id="p-trade">
+      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">swap --jupiter-v6 aggregator</span></div>
+
+      <div class="card">
+        <div class="card-h"><span>manual swap</span><span class="badge bm">Jupiter v6 aggregator</span></div>
+        <div class="g3" style="margin-bottom:10px">
+          <div>
+            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">from</div>
+            <div class="irow" style="margin-bottom:0"><input type="text" id="t-from" value="SOL"/></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">to (symbol or mint)</div>
+            <div class="irow" style="margin-bottom:0"><input type="text" id="t-to" placeholder="symbol or mint address"/></div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--muted2);margin-bottom:4px">amount SOL</div>
+            <div class="irow" style="margin-bottom:0"><input type="number" id="t-amt" placeholder="0.05" step="0.01"/></div>
+          </div>
+        </div>
+        <button class="btn g" onclick="executeTrade()">execute swap →</button>
+        <div class="term" id="t-out" style="margin-top:10px;display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>token lookup</span><span class="badge bm">DexScreener · Solana</span></div>
+        <div class="irow">
+          <span class="pre">dex →</span>
+          <input type="text" id="lk-q" placeholder="symbol or mint address"/>
+          <button class="ibtn" onclick="lookupToken()">search</button>
+        </div>
+        <div class="term" id="lk-out" style="display:none"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-h"><span>trade history</span><span class="right" onclick="fetchHistory()" style="cursor:pointer">↺ refresh</span></div>
+        <table class="tbl">
+          <thead><tr><th>token</th><th>action</th><th>amount</th><th>pnl</th><th>tx</th></tr></thead>
+          <tbody id="hist-body"><tr><td colspan="5" style="color:var(--muted)">connect bot to load history</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MARKET -->
+    <div class="panel" id="p-market">
+      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">market --live --all</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="btn" onclick="fetchMarket('sol')">SOL macro</button>
+        <button class="btn" onclick="fetchMarket('trending')">CoinGecko trending</button>
+        <button class="btn" onclick="fetchMarket('pump')">pump.fun new</button>
+        <button class="btn" onclick="fetchMarket('grad')">near graduation</button>
+        <button class="btn" onclick="whalescan()">whale scan</button>
+      </div>
+      <div class="term" id="mkt-out" style="min-height:200px"><span class="m"># select a view above — requires bot connection</span></div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="panel" id="p-logs">
+      <div class="cmd-line"><span class="p">user@console:~$ </span><span class="c">tail -f collective.log | grep -E "INFO|ERR|WARN"</span></div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="btn" onclick="clearLogs()">clear</button>
+        <button class="btn g" onclick="pollLogs()">↺ refresh</button>
+      </div>
+      <div class="term" id="log-out" style="min-height:400px;max-height:65vh;overflow-y:auto"><span class="m"># dashboard log</span></div>
+    </div>
+
+  </div><!-- /panels -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<div class="toast" id="toast"></div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mob-nav">
+  <button class="mob-nav-item on" id="mn-overview" onclick="go('overview');mobNav('overview')">
+    <span class="ic">$</span><span class="lb">home</span>
+  </button>
+  <button class="mob-nav-item" id="mn-trade" onclick="go('trade');mobNav('trade')">
+    <span class="ic">⇄</span><span class="lb">swap</span>
+  </button>
+  <button class="mob-nav-item" id="mn-council" onclick="go('council');mobNav('council')">
+    <span class="ic">⬡</span><span class="lb">agents</span>
+  </button>
+  <button class="mob-nav-item" id="mn-market" onclick="go('market');mobNav('market')">
+    <span class="ic">↑</span><span class="lb">market</span>
+  </button>
+  <button class="mob-nav-item" id="mn-more" onclick="toggleMore()">
+    <span class="ic">☰</span><span class="lb">more</span>
+  </button>
+</div>
+
+<!-- MOBILE MORE MENU -->
+<div class="mob-more" id="mob-more-menu">
+  <div class="mob-more-item" onclick="go('votes');mobNav('votes');toggleMore()"><span>◈</span> vote log</div>
+  <div class="mob-more-item" onclick="go('wallet');mobNav('wallet');toggleMore()"><span>◎</span> wallet</div>
+  <div class="mob-more-item" onclick="go('keys');mobNav('keys');toggleMore()"><span>🔑</span> api keys</div>
+  <div class="mob-more-item" onclick="go('deploy');mobNav('deploy');toggleMore()"><span>🚀</span> free deploy</div>
+  <div class="mob-more-item" onclick="go('logs');mobNav('logs');toggleMore()"><span>▸</span> logs</div>
+</div>
+
+
+<!-- CONNECT MODAL -->
+<div id="connect-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:999;display:none;align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:20px;width:420px;max-width:95vw">
+    <div style="font-size:12px;color:var(--muted2);margin-bottom:12px">connect to bot API endpoint</div>
+    <div class="irow"><span class="pre">url</span><input type="text" id="modal-url" placeholder="http://localhost:8000"/><button class="ibtn" onclick="doConnect()">connect</button></div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px">Railway: https://yourapp.up.railway.app · Render: https://yourapp.onrender.com · Local: http://localhost:8000</div>
+    <button class="btn" onclick="closeModal()" style="margin-top:10px;font-size:11px">cancel</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────────
+var BOT = localStorage.getItem('b_url') || '';
+var LOGS = [];
+var VOTES = JSON.parse(localStorage.getItem('b_votes') || '[]');
+var AGENTS = JSON.parse(localStorage.getItem('b_agents') || '[]');
+
+var PROVIDERS = {
+  claude:     { name:'Claude (Anthropic)', key:'ANTHROPIC_API_KEY',    models:['claude-sonnet-4-20250514','claude-opus-4-5','claude-haiku-4-5-20251001'] },
+  gpt:        { name:'GPT-4o (OpenAI)',    key:'OPENAI_API_KEY',       models:['gpt-4o','gpt-4o-mini','o1-mini'] },
+  grok:       { name:'Grok (xAI)',         key:'GROK_API_KEY',         models:['grok-3','grok-3-mini','grok-2'] },
+  gemini:     { name:'Gemini (Google)',    key:'GEMINI_API_KEY',        models:['gemini-1.5-pro','gemini-1.5-flash','gemini-2.0-flash'] },
+  groq:       { name:'Groq',              key:'GROQ_API_KEY',          models:['llama-3.3-70b-versatile','llama-3.1-8b-instant','mixtral-8x7b-32768','deepseek-r1-distill-llama-70b'] },
+  openrouter: { name:'OpenRouter',        key:'OPENROUTER_API_KEY',    models:['deepseek/deepseek-r1','mistralai/mixtral-8x7b-instruct','google/gemma-3-27b-it','meta-llama/llama-3.3-70b-instruct'] },
+};
+
+// ── CLOCK ──────────────────────────────────────────────────────────────────────
+function clock() {
+  var d = new Date();
+  document.getElementById('tb-time').textContent = d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+clock(); setInterval(clock, 1000);
+
+// ── TOAST ──────────────────────────────────────────────────────────────────────
+function toast(msg, err) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast' + (err ? ' err' : '');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+  addLog(err ? 'ERR' : 'OK', msg);
+}
+
+// ── LOG ────────────────────────────────────────────────────────────────────────
+function addLog(level, msg) {
+  var ts = new Date().toTimeString().slice(0,8);
+  LOGS.push('[' + ts + '] [' + level + '] ' + msg);
+  if (LOGS.length > 300) LOGS.shift();
+  var el = document.getElementById('log-out');
+  if (el) el.textContent = LOGS.slice(-100).join('\n');
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function go(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav').forEach(n => n.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  var p = document.getElementById('p-' + id);
+  var n = document.getElementById('n-' + id);
+  var t = document.getElementById('t-' + id);
+  if (p) p.classList.add('on');
+  if (n) n.classList.add('on');
+  if (t) t.classList.add('on');
+}
+
+// ── CONNECT ───────────────────────────────────────────────────────────────────
+function showConnect() {
+  var m = document.getElementById('connect-modal');
+  m.style.display = 'flex';
+  if (BOT) document.getElementById('modal-url').value = BOT;
+}
+function closeModal() { document.getElementById('connect-modal').style.display = 'none'; }
+function doConnect() {
+  var url = document.getElementById('modal-url').value.trim();
+  if (url) { document.getElementById('api-url').value = url; connectBot(); closeModal(); }
+}
+
+async function connectBot() {
+  var url = (document.getElementById('api-url').value || '').trim().replace(/\/$/, '');
+  if (!url) { toast('enter endpoint URL', true); return; }
+  BOT = url; localStorage.setItem('b_url', url);
+  document.getElementById('conn-text').textContent = url.replace('https://','').replace('http://','').slice(0,30);
+  addLog('INFO', 'connecting to ' + url);
+  try {
+    var r = await fetch(url + '/status', { signal: AbortSignal.timeout(8000) });
+    var d = await r.json();
+    setConnected(true);
+    document.getElementById('s-state').textContent = 'online';
+    document.getElementById('s-state').className = 'stat-v g';
+    document.getElementById('s-trades').textContent = (d.trades || 0) + ' / 3';
+    document.getElementById('s-uptime').textContent = 'v' + (d.version || '?');
+    document.getElementById('s-agents').textContent = AGENTS.filter(a=>a.active).length;
+    document.getElementById('status-out').textContent = '● trading-bot.service — active (running)\n   endpoint: ' + url + '\n   trades:   ' + (d.trades||0) + '/3\n   version:  v' + (d.version||'?');
+    renderPositions(d.positions || []);
+    toast('connected to ' + url.slice(0,30));
+    var w = localStorage.getItem('b_wallet');
+    if (w) fetchBalance(w);
+    fetchHistory();
+  } catch(e) {
+    setConnected(false);
+    document.getElementById('s-state').textContent = 'offline';
+    document.getElementById('s-state').className = 'stat-v r';
+    document.getElementById('status-out').innerHTML = '<span class="e">× cannot connect to ' + url + '</span>\n<span class="m">check: uvicorn api:app --host 0.0.0.0 --port 8000\nor see 🚀 free deploy tab</span>';
+    toast('connection failed — see free deploy tab', true);
+  }
+}
+
+function setConnected(ok) {
+  var dot = document.getElementById('conn-dot');
+  dot.className = ok ? 'on' : '';
+  if (!ok) document.getElementById('conn-text').textContent = 'disconnected — click to retry';
+}
+
+async function refreshStatus() { if (BOT) connectBot(); }
+
+function renderPositions(pos) {
+  var tb = document.getElementById('pos-body');
+  if (!pos.length) { tb.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">no open positions</td></tr>'; return; }
+  tb.innerHTML = pos.map(p => {
+    var up = p.pnl >= 0;
+    return '<tr><td><strong>' + p.symbol + '</strong></td><td><span class="badge bm">' + p.strategy + '</span></td><td>' + p.amount + ' SOL</td><td style="color:' + (up?'var(--green)':'var(--red)') + '">' + (up?'+':'') + p.pnl.toFixed(2) + '%</td><td><span class="badge ' + (p.status==='open'?'bg':'bm') + '">' + (p.status||'open') + '</span></td></tr>';
+  }).join('');
+}
+
+// ── WALLET ────────────────────────────────────────────────────────────────────
+function saveWallet() {
+  var a = document.getElementById('w-addr').value.trim();
+  if (!a) { toast('enter an address', true); return; }
+  localStorage.setItem('b_wallet', a);
+  document.getElementById('w-status').textContent = 'saved: ' + a.slice(0,8) + '…' + a.slice(-6);
+  toast('wallet saved');
+  if (BOT) fetchBalance(a);
+}
+
+async function fetchBalance(addr) {
+  if (!BOT) return;
+  try {
+    var r = await fetch(BOT + '/wallet/' + addr);
+    var d = await r.json();
+    var sol = d.sol || 0;
+    document.getElementById('s-bal').textContent = sol.toFixed(4) + ' SOL';
+    document.getElementById('s-bal-usd').textContent = '≈ $' + (sol * 165).toFixed(2) + ' USD';
+    document.getElementById('bal-out').textContent = sol.toFixed(6) + ' SOL\n≈ $' + (sol * 165).toFixed(2) + ' USD (est.)';
+    addLog('INFO', 'balance: ' + sol.toFixed(4) + ' SOL');
+  } catch(e) { addLog('WARN', 'balance fetch failed'); }
+}
+
+function checkBalance() {
+  var w = localStorage.getItem('b_wallet') || document.getElementById('w-addr').value.trim();
+  if (w && BOT) fetchBalance(w);
+  else toast('save wallet address and connect bot first', true);
+}
+
+async function createWallet() {
+  if (!BOT) { toast('connect bot first', true); return; }
+  var el = document.getElementById('w-new-out');
+  el.style.display = 'block'; el.textContent = 'generating...';
+  try {
+    var r = await fetch(BOT + '/wallet/create', { method: 'POST' });
+    var d = await r.json();
+    el.innerHTML = '<span style="color:var(--orange)">⚠ save this now — shown once only</span>\n\npubkey:  ' + d.address + '\nprivkey: ' + d.private_key_b58 + '\n\n' + d.warning;
+    toast('wallet created — save private key!');
+  } catch(e) { el.innerHTML = '<span class="e">error: ' + e.message + '</span>'; toast('failed', true); }
+}
+
+// ── KEYS ──────────────────────────────────────────────────────────────────────
+var KEY_DEFS = [
+  { id:'ANTHROPIC_API_KEY',   label:'ANTHROPIC_API_KEY',   ph:'sk-ant-...',    badge:'Claude',      bc:'bb' },
+  { id:'OPENAI_API_KEY',      label:'OPENAI_API_KEY',       ph:'sk-...',        badge:'GPT-4o',      bc:'bg' },
+  { id:'GROK_API_KEY',        label:'GROK_API_KEY',         ph:'xai-...',       badge:'Grok',        bc:'bm' },
+  { id:'GEMINI_API_KEY',      label:'GEMINI_API_KEY',       ph:'AIza...',       badge:'Gemini',      bc:'bm' },
+  { id:'GROQ_API_KEY',        label:'GROQ_API_KEY',         ph:'gsk_...',       badge:'Groq',        bc:'bm' },
+  { id:'OPENROUTER_API_KEY',  label:'OPENROUTER_API_KEY',   ph:'sk-or-...',     badge:'OpenRouter',  bc:'bp' },
+  { id:'HELIUS_API_KEY',      label:'HELIUS_API_KEY',       ph:'helius key...',  badge:'Solana RPC',  bc:'bo' },
+  { id:'WALLET_PRIVATE_KEY_B58', label:'WALLET_PRIVATE_KEY_B58', ph:'base58 private key', badge:'⚠ PRIVATE KEY', bc:'br' },
+];
+
+function buildKeysGrid() {
+  var html = '';
+  KEY_DEFS.forEach(k => {
+    var saved = localStorage.getItem('b_' + k.id) ? '✓ saved' : 'not set';
+    var sc = localStorage.getItem('b_' + k.id) ? 'color:var(--green)' : 'color:var(--muted)';
+    html += '<div class="card" style="margin-bottom:8px"><div class="card-h"><span>' + k.label + '</span><span class="badge ' + k.bc + '">' + k.badge + '</span></div>';
+    html += '<div class="irow"><div class="pw-w"><input type="password" id="key-' + k.id + '" placeholder="' + k.ph + '"/><span class="pw-eye" onclick="togglePw(\'key-' + k.id + '\')">show</span></div>';
+    html += '<button class="ibtn" onclick="saveOneKey(\'' + k.id + '\')">save</button></div>';
+    html += '<div style="font-size:10px;' + sc + '">' + saved + '</div></div>';
+  });
+  document.getElementById('keys-grid').innerHTML = html;
+  // restore saved values
+  KEY_DEFS.forEach(k => {
+    var v = localStorage.getItem('b_' + k.id);
+    if (v) document.getElementById('key-' + k.id).value = v;
+  });
+}
+
+function togglePw(id) { var el = document.getElementById(id); el.type = el.type === 'password' ? 'text' : 'password'; }
+
+function saveOneKey(kid) {
+  var v = document.getElementById('key-' + kid).value.trim();
+  if (!v) { toast('empty value', true); return; }
+  localStorage.setItem('b_' + kid, v);
+  toast('saved ' + kid);
+  buildKeysGrid();
+  checkProviderKeys();
+}
+
+function saveAllKeys() {
+  var saved = 0;
+  KEY_DEFS.forEach(k => {
+    var v = document.getElementById('key-' + k.id);
+    if (v && v.value.trim()) { localStorage.setItem('b_' + k.id, v.value.trim()); saved++; }
+  });
+  toast('saved ' + saved + ' keys locally');
+  buildKeysGrid();
+  checkProviderKeys();
+}
+
+async function pushKeysToBot() {
+  if (!BOT) { toast('connect bot first', true); return; }
+  var keys = {};
+  KEY_DEFS.forEach(k => { var v = localStorage.getItem('b_' + k.id); if (v) keys[k.id] = v; });
+  try {
+    await fetch(BOT + '/keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(keys) });
+    toast('keys pushed to bot .env');
+  } catch(e) {
+    // try legacy endpoint
+    try {
+      await fetch(BOT + '/env/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(keys) });
+      toast('keys pushed to bot');
+    } catch(e2) { toast('push failed — is bot running?', true); }
+  }
+}
+
+function checkProviderKeys() {
+  var prov = document.getElementById('ag-prov');
+  if (!prov) return;
+  var p = prov.value;
+  var keyName = PROVIDERS[p] ? PROVIDERS[p].key : null;
+  var hasKey = keyName && localStorage.getItem('b_' + keyName);
+  document.getElementById('ag-key-warn').style.display = hasKey ? 'none' : 'block';
+}
+
+// ── AGENT COUNCIL ─────────────────────────────────────────────────────────────
+function onProviderChange() {
+  var prov = document.getElementById('ag-prov').value;
+  var modelSel = document.getElementById('ag-model');
+  var models = PROVIDERS[prov] ? PROVIDERS[prov].models : ['custom'];
+  modelSel.innerHTML = models.map(m => '<option value="' + m + '">' + m + '</option>').join('');
+  checkProviderKeys();
+}
+
+function addAgent() {
+  var name = document.getElementById('ag-name').value.trim();
+  var prov = document.getElementById('ag-prov').value;
+  var model = document.getElementById('ag-model').value;
+  var thesis = document.getElementById('ag-thesis').value;
+  var size = parseFloat(document.getElementById('ag-size').value) || 0.05;
+  var weight = parseInt(document.getElementById('ag-weight').value) || 1;
+  var threshold = parseInt(document.getElementById('ag-threshold').value) || 60;
+
+  if (!name) { toast('give your agent a name', true); return; }
+  if (AGENTS.find(a => a.name === name)) { toast('agent name already in use', true); return; }
+
+  var agent = { id: Date.now().toString(), name, provider: prov, model, thesis, size, weight, threshold, active: true };
+  AGENTS.push(agent);
+  saveAgents();
+  renderAgents();
+  document.getElementById('ag-name').value = '';
+  toast('agent "' + name + '" added to council');
+  addLog('INFO', 'agent added: ' + name + ' (' + prov + '/' + model + ')');
+
+  // push to bot if connected
+  if (BOT) {
+    fetch(BOT + '/agents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(agent) }).catch(() => {});
+  }
+}
+
+function saveAgents() {
+  localStorage.setItem('b_agents', JSON.stringify(AGENTS));
+  var cnt = AGENTS.filter(a => a.active).length;
+  document.getElementById('s-agents').textContent = cnt;
+  var el = document.getElementById('agent-count'); if (el) el.textContent = AGENTS.length;
+  var el2 = document.getElementById('council-count'); if (el2) el2.textContent = AGENTS.length + ' agent' + (AGENTS.length !== 1 ? 's' : '');
+}
+
+function renderAgents() {
+  var el = document.getElementById('agents-list');
+  if (!AGENTS.length) { el.innerHTML = '<div style="color:var(--muted);font-size:11px;padding:8px 0">no agents yet — add your first AI above</div>'; return; }
+  el.innerHTML = AGENTS.map((a, i) => {
+    var thesis_color = {momentum:'bo',dip_buy:'bb',breakout:'bo',whale_follow:'bp',ai:'bg'}[a.thesis] || 'bm';
+    return '<div class="agent-card' + (a.active ? ' active' : '') + '">' +
+      '<div><div class="ag-name">' + a.name + '</div>' +
+      '<div class="ag-meta"><span>' + a.provider + '</span><span>' + (a.model||'').split('/').pop() + '</span><span class="badge ' + thesis_color + '">' + a.thesis + '</span><span>' + a.size + ' SOL</span><span>weight ' + a.weight + '</span><span>buy@' + a.threshold + '%</span></div></div>' +
+      '<div class="ag-controls">' +
+      '<label class="tog"><input type="checkbox"' + (a.active?' checked':'') + ' onchange="toggleAgent(' + i + ',this)"><span class="tsl"></span></label>' +
+      '</div>' +
+      '<button class="btn r" style="padding:3px 8px;font-size:10px" onclick="removeAgent(' + i + ')">rm</button>' +
+      '</div>';
+  }).join('');
+  saveAgents();
+}
+
+function toggleAgent(i, el) {
+  AGENTS[i].active = el.checked;
+  saveAgents();
+  renderAgents();
+  toast((el.checked ? 'activated ' : 'paused ') + AGENTS[i].name);
+}
+
+function removeAgent(i) {
+  var name = AGENTS[i].name;
+  AGENTS.splice(i, 1);
+  saveAgents();
+  renderAgents();
+  toast('removed ' + name);
+}
+
+function clearAllAgents() {
+  if (!confirm('Remove all agents from council?')) return;
+  AGENTS = [];
+  saveAgents();
+  renderAgents();
+  toast('council cleared');
+}
+
+// ── COUNCIL VOTE ──────────────────────────────────────────────────────────────
+async function councilVoteNow() {
+  var active = AGENTS.filter(a => a.active);
+  if (!active.length) { toast('add at least one active agent first', true); return; }
+
+  var out = document.getElementById('council-out');
+  out.style.display = 'block';
+  out.textContent = '▶ running council vote...\n' + active.length + ' agents deliberating\n\n';
+
+  document.getElementById('council-dot').className = 'on';
+  document.getElementById('council-status-text').textContent = 'agents voting...';
+
+  if (BOT) {
+    // ask bot to run the vote
+    try {
+      var token = document.getElementById('lk-q') ? document.getElementById('lk-q').value.trim() : '';
+      var r = await fetch(BOT + '/votes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agents: active, user_id: 'dashboard' })
+      });
+      var d = await r.json();
+      renderVoteResult(d, out);
+      return;
+    } catch(e) {
+      out.textContent += 'bot not reachable — running simulated vote\n\n';
+    }
+  }
+
+  // offline demo vote
+  simulateVote(active, out);
+}
+
+function simulateVote(agents, out) {
+  var votes = agents.map(a => {
+    var rnd = Math.random();
+    var dec = rnd > 0.6 ? 'buy' : (rnd > 0.35 ? 'hold' : 'sell');
+    var conf = Math.round(50 + Math.random() * 45);
+    var reasons = {
+      momentum: 'Strong 1h momentum with volume confirmation supports entry.',
+      dip_buy:  'Price recovering from oversold zone, volume picking up.',
+      breakout: 'Technical breakout pattern forming, resistance cleared.',
+      whale_follow: 'Whale wallet accumulation detected in last 30min.',
+      ai:       'Holistic analysis: risk/reward favorable at current mcap.',
+    };
+    return { agent: a.name, provider: a.provider, decision: dec, confidence: conf, weight: a.weight, reasoning: reasons[a.thesis] || 'AI analysis complete.', ok: true };
+  });
+
+  var totalWeight = votes.reduce((s,v) => s + v.weight, 0);
+  var buyWeight = votes.filter(v => v.decision === 'buy').reduce((s,v) => s + v.weight, 0);
+  var buyPct = Math.round(buyWeight / Math.max(totalWeight,1) * 100);
+  var threshold = agents[0] ? agents[0].threshold : 60;
+  var decision = buyPct >= threshold ? 'BUY' : 'HOLD';
+
+  var result = { votes, buyPct, totalWeight, buyWeight, decision, simulated: true };
+  renderVoteResult(result, out);
+}
+
+function renderVoteResult(d, out) {
+  var votes = d.votes || [];
+  var buyPct = d.buy_pct || d.buyPct || 0;
+  var decision = d.decision || 'HOLD';
+  var ts = new Date().toLocaleTimeString();
+
+  var text = '══ COUNCIL VERDICT ══════════════════════\n';
+  text += 'decision:  ' + decision + (d.simulated ? ' (simulated)' : '') + '\n';
+  text += 'buy votes: ' + buyPct + '% weighted\n';
+  text += '─────────────────────────────────────────\n';
+  votes.forEach(v => {
+    var dec = v.decision.toUpperCase().padEnd(4);
+    var conf = ('conf:' + v.confidence + '%').padEnd(10);
+    text += dec + '  ' + v.agent.padEnd(12) + ' ' + conf + ' [' + v.provider + ']\n';
+    text += '     ' + (v.reasoning || '').slice(0, 60) + '\n';
+  });
+  out.textContent = text;
+
+  // save to vote log
+  var entry = { ts, votes, buyPct, decision, simulated: d.simulated };
+  VOTES.unshift(entry);
+  if (VOTES.length > 50) VOTES.pop();
+  localStorage.setItem('b_votes', JSON.stringify(VOTES));
+  document.getElementById('last-vote-time').textContent = 'last: ' + ts;
+  document.getElementById('council-dot').className = 'on';
+  document.getElementById('council-status-text').textContent = decision === 'BUY' ? '● signal: buy' : '● signal: hold';
+  loadVotes();
+}
+
+function loadVotes() {
+  var el = document.getElementById('vote-log');
+  if (!VOTES.length) { el.innerHTML = '<div style="color:var(--muted);font-size:11px">no votes logged yet</div>'; return; }
+
+  // show last vote summary
+  var last = VOTES[0];
+  document.getElementById('vote-summary').style.display = 'block';
+  document.getElementById('vote-ts').textContent = last.ts;
+  var dec = last.decision;
+  var col = dec === 'BUY' ? 'var(--green)' : dec === 'SELL' ? 'var(--red)' : 'var(--orange)';
+  document.getElementById('vote-tally').innerHTML =
+    '<div style="font-size:22px;font-weight:700;color:' + col + '">' + dec + '</div>' +
+    '<div style="font-size:12px;color:var(--muted2);margin-top:2px">buy weight: ' + last.buyPct + '% of council' + (last.simulated ? ' (demo)' : '') + '</div>';
+
+  var detailHtml = (last.votes || []).map(v => {
+    var cls = v.decision === 'buy' ? 'buy' : v.decision === 'sell' ? 'sell' : 'hold';
+    return '<div class="vote-row"><span class="vr-agent">' + v.agent + '</span><span class="vr-dec ' + cls + '">' + v.decision.toUpperCase() + '</span><div class="vr-bar"><div class="vr-fill ' + cls + '" style="width:' + v.confidence + '%"></div></div><span class="vr-pct">' + v.confidence + '%</span></div>';
+  }).join('');
+  document.getElementById('vote-details').innerHTML = detailHtml;
+
+  el.innerHTML = VOTES.slice(0, 20).map(v =>
+    '<div style="padding:6px 0;border-bottom:1px solid #1a1c1e;font-size:11px">' +
+    '<span style="color:var(--muted2)">' + v.ts + '</span> ' +
+    '<span style="color:' + (v.decision==='BUY'?'var(--green)':'var(--orange)') + ';font-weight:700">' + v.decision + '</span>' +
+    ' — buy ' + v.buyPct + '% · ' + (v.votes||[]).length + ' agents' + (v.simulated?' <span style="color:var(--muted)">(demo)</span>':'') + '</div>'
+  ).join('');
+}
+
+function clearVotes() {
+  VOTES = []; localStorage.removeItem('b_votes');
+  document.getElementById('vote-summary').style.display = 'none';
+  loadVotes();
+  toast('vote log cleared');
+}
+
+// ── TRADE ─────────────────────────────────────────────────────────────────────
+async function executeTrade() {
+  if (!BOT) { toast('connect bot first', true); return; }
+  var from = document.getElementById('t-from').value.trim();
+  var to = document.getElementById('t-to').value.trim();
+  var amt = parseFloat(document.getElementById('t-amt').value);
+  if (!to || isNaN(amt)) { toast('fill all fields', true); return; }
+  var el = document.getElementById('t-out');
+  el.style.display = 'block'; el.textContent = 'executing swap via Jupiter v6...';
+  addLog('INFO', 'swap ' + amt + ' SOL → ' + to);
+  try {
+    var r = await fetch(BOT + '/trade/swap', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_token: from, to_token: to, amount_sol: amt, user_id: 'dashboard' }) });
+    var d = await r.json();
+    if (d.ok) {
+      el.innerHTML = '<span style="color:var(--green)">✓ swap complete</span>\ntx:       ' + d.signature + '\nexplorer: ' + d.explorer;
+      toast('swap executed!');
+      fetchHistory();
+    } else {
+      el.innerHTML = '<span class="e">✗ ' + d.error + '</span>';
+      toast('swap failed', true);
+    }
+  } catch(e) { el.innerHTML = '<span class="e">bot unreachable</span>'; toast('unreachable', true); }
+}
+
+async function lookupToken() {
+  if (!BOT) { toast('connect bot first', true); return; }
+  var q = document.getElementById('lk-q').value.trim();
+  if (!q) { toast('enter symbol or mint', true); return; }
+  var el = document.getElementById('lk-out');
+  el.style.display = 'block'; el.textContent = 'searching DexScreener...';
+  try {
+    var r = await fetch(BOT + '/token/' + encodeURIComponent(q));
+    var d = await r.json();
+    if (d.ok) {
+      el.textContent = 'symbol:  ' + d.symbol + '\nname:    ' + d.name + '\nprice:   $' + parseFloat(d.price).toFixed(8) + '\nmcap:    $' + (d.mcap/1000).toFixed(0) + 'k\nliq:     $' + (d.liq/1000).toFixed(0) + 'k\nmint:    ' + d.mint;
+    } else { el.innerHTML = '<span class="e">' + d.error + '</span>'; }
+  } catch(e) { el.innerHTML = '<span class="e">unreachable</span>'; }
+}
+
+async function fetchHistory() {
+  if (!BOT) return;
+  try {
+    var r = await fetch(BOT + '/trade/history?limit=15');
+    var d = await r.json();
+    var tb = document.getElementById('hist-body');
+    if (!d.history || !d.history.length) { tb.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">no trades yet</td></tr>'; return; }
+    tb.innerHTML = d.history.map(h => {
+      var up = h.pnl >= 0;
+      var short = h.sig ? h.sig.slice(0,8) + '…' : '—';
+      return '<tr><td><strong>' + h.symbol + '</strong></td><td><span class="badge ' + (h.action==='buy'?'bg':'bo') + '">' + h.action + '</span></td><td>' + h.amount + ' SOL</td><td style="color:' + (up?'var(--green)':'var(--red)') + '">' + (up?'+':'') + h.pnl.toFixed(4) + '</td><td><span style="font-size:10px;color:var(--muted)">' + short + '</span></td></tr>';
+    }).join('');
+  } catch(e) {}
+}
+
+// ── MARKET ────────────────────────────────────────────────────────────────────
+async function fetchMarket(type) {
+  if (!BOT) { toast('connect bot first', true); return; }
+  var el = document.getElementById('mkt-out');
+  el.textContent = 'fetching ' + type + '...';
+  try {
+    var r = await fetch(BOT + '/market/' + type);
+    var d = await r.json();
+    el.textContent = d.text || JSON.stringify(d, null, 2);
+  } catch(e) { el.innerHTML = '<span class="e">unreachable</span>'; }
+}
+
+async function whalescan() {
+  if (!BOT) { toast('connect bot first', true); return; }
+  var el = document.getElementById('mkt-out');
+  el.textContent = 'scanning whale wallets...';
+  try {
+    var r = await fetch(BOT + '/whale/scan');
+    var d = await r.json();
+    el.textContent = d.text || JSON.stringify(d, null, 2);
+  } catch(e) { el.innerHTML = '<span class="e">unreachable</span>'; }
+}
+
+// ── LOGS ─────────────────────────────────────────────────────────────────────
+function clearLogs() { LOGS = []; document.getElementById('log-out').innerHTML = '<span class="m"># cleared</span>'; }
+function pollLogs() { addLog('INFO', 'manual refresh'); }
+
+// ── CODE COPY ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.code-block').forEach(el => {
+  el.addEventListener('click', () => {
+    navigator.clipboard.writeText(el.textContent.replace('click to copy', '').trim()).then(() => toast('copied!')).catch(() => {});
+  });
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+(function init() {
+  if (BOT) document.getElementById('api-url').value = BOT;
+  buildKeysGrid();
+  onProviderChange();
+  renderAgents();
+  loadVotes();
+  addLog('INFO', 'console loaded');
+  addLog('INFO', 'bot endpoint: ' + (BOT || 'not set'));
+  addLog('INFO', 'agents in council: ' + AGENTS.length);
+  var w = localStorage.getItem('b_wallet');
+  if (w) { document.getElementById('w-addr').value = w; document.getElementById('w-status').textContent = 'saved: ' + w.slice(0,8) + '…' + w.slice(-6); }
+})();
+
+// ── MOBILE NAV ────────────────────────────────────────────────────────────────
+function mobNav(id) {
+  document.querySelectorAll('.mob-nav-item').forEach(n => n.classList.remove('on'));
+  var el = document.getElementById('mn-' + id);
+  if (el) el.classList.add('on');
+  else document.getElementById('mn-more').classList.add('on');
+}
+function toggleMore() {
+  var m = document.getElementById('mob-more-menu');
+  m.classList.toggle('open');
+}
+// close more menu when tapping outside
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('mob-more-menu');
+  var btn = document.getElementById('mn-more');
+  if (menu && !menu.contains(e.target) && btn && !btn.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
+
+
+function generateWalletLocal() {
+    // Generate 32 random bytes for the private key seed
+    const seed = crypto.getRandomValues(new Uint8Array(32));
+    // Simple base58 encoding
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    function toBase58(bytes) {
+        let d = [], s = '', i, j, c, carry;
+        for (i = 0; i < bytes.length; i++) {
+            j = 0; carry = bytes[i];
+            while (j < d.length || carry) {
+                if (j < d.length) { carry += d[j] << 8; d[j] = carry % 58; carry = (carry / 58) | 0; }
+                else { d.push(carry % 58); carry = (carry / 58) | 0; }
+                j++;
+            }
+        }
+        for (i = 0; i < bytes.length && bytes[i] === 0; i++) s += ALPHABET[0];
+        for (i = d.length - 1; i >= 0; i--) s += ALPHABET[d[i]];
+        return s;
+    }
+    const privKeyB58 = toBase58(seed);
+    const out = document.getElementById('w-new-out');
+    out.style.display = 'block';
+    out.innerHTML = `<span style="color:var(--green)">✅ New wallet generated</span>
+
+<span style="color:var(--muted2)">Private key (base58) — SAVE THIS NOW, shown once:</span>
+<span style="color:var(--orange);word-break:break-all;user-select:all">${privKeyB58}</span>
+
+<span style="color:var(--muted2)">Add to your .env:</span>
+<span style="color:var(--text);user-select:all">WALLET_PRIVATE_KEY=${privKeyB58}</span>
+
+<span style="color:var(--red)">⚠ Never share your private key. Close this tab after saving.</span>`;
+}
+
+
+async function saveCustomAgent() {
+    const name = document.getElementById('ca-name').value.trim();
+    const task = document.getElementById('ca-task').value.trim();
+    if (!name || !task) { toast('enter a name and task'); return; }
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) { toast('connect bot first'); return; }
+    try {
+        const r = await fetch(url + '/agents/custom', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, task})
+        });
+        if (r.ok) {
+            toast('✅ agent saved: ' + name);
+            document.getElementById('ca-name').value = '';
+            document.getElementById('ca-task').value = '';
+            loadCustomAgents();
+        }
+    } catch(e) { toast('error: ' + e.message); }
+}
+
+async function loadCustomAgents() {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        const r = await fetch(url + '/agents/custom');
+        const data = await r.json();
+        const el = document.getElementById('custom-agents-list');
+        if (!data.agents || data.agents.length === 0) {
+            el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px 0">no custom agents yet</div>';
+            return;
+        }
+        el.innerHTML = data.agents.map(a => `
+            <div class="agent-card" style="margin-bottom:6px">
+                <div>
+                    <div style="font-size:12px;color:var(--text)">⚙️ ${a.name}</div>
+                    <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.task.substring(0, 80)}${a.task.length > 80 ? '...' : ''}</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center">
+                    <span style="font-size:10px;color:var(--green)">${a.enabled ? 'active' : 'off'}</span>
+                    <button class="ibtn" onclick="deleteCustomAgent('${a.name}')" style="font-size:10px;color:var(--red)">✕</button>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+async function deleteCustomAgent(name) {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        await fetch(url + '/agents/custom/' + name, {method: 'DELETE'});
+        toast('removed: ' + name);
+        loadCustomAgents();
+    } catch(e) { toast('error'); }
+}
+
+
+async function saveCustomAgent() {
+    const name = document.getElementById('ca-name').value.trim();
+    const task = document.getElementById('ca-task').value.trim();
+    if (!name || !task) { toast('enter a name and task'); return; }
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) { toast('connect bot first'); return; }
+    try {
+        const r = await fetch(url + '/agents/custom', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, task})
+        });
+        if (r.ok) {
+            toast('✅ agent saved: ' + name);
+            document.getElementById('ca-name').value = '';
+            document.getElementById('ca-task').value = '';
+            loadCustomAgents();
+        }
+    } catch(e) { toast('error: ' + e.message); }
+}
+
+async function loadCustomAgents() {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        const r = await fetch(url + '/agents/custom');
+        const data = await r.json();
+        const el = document.getElementById('custom-agents-list');
+        if (!data.agents || data.agents.length === 0) {
+            el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px 0">no custom agents yet</div>';
+            return;
+        }
+        el.innerHTML = data.agents.map(a => `
+            <div class="agent-card" style="margin-bottom:6px">
+                <div>
+                    <div style="font-size:12px;color:var(--text)">⚙️ ${a.name}</div>
+                    <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.task.substring(0, 80)}${a.task.length > 80 ? '...' : ''}</div>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center">
+                    <span style="font-size:10px;color:var(--green)">${a.enabled ? 'active' : 'off'}</span>
+                    <button class="ibtn" onclick="deleteCustomAgent('${a.name}')" style="font-size:10px;color:var(--red)">✕</button>
+                </div>
+            </div>
+        `).join('');
+    } catch(e) {}
+}
+
+async function deleteCustomAgent(name) {
+    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    if (!url) return;
+    try {
+        await fetch(url + '/agents/custom/' + name, {method: 'DELETE'});
+        toast('removed: ' + name);
+        loadCustomAgents();
+    } catch(e) { toast('error'); }
+}
+
+</script>
+</body>
+</html>

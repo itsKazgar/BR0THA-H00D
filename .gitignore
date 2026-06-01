@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.env
+*.env
+secrets.py
+config_local.py
+brain/          # if it has sensitive signal data
+*.log
+*.deb
+.env
+.env
+replacements.txt

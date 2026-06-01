@@ -1,0 +1,39 @@
+[33m714ef6d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m fix: remove hardcoded OpenRouter key, load from env
+[33m7317735[m initial commit — pump hunter trading system
+[33m60c92a3[m remove brotha name from UI
+[33m373c3a0[m clean up file references in README
+[33m1401710[m rebrand README to collective
+[33m00df539[m fix mobile bottom padding
+[33mf7cb2f2[m mobile responsive UI
+[33md670baa[m README with live demo link
+[33mb4fd5b9[m add live demo link to README
+[33m206612a[m[33m ([m[1;32mgh-pages[m[33m)[m add index.html for github pages
+[33m7f39bde[m better README
+[33m9647690[m fresh README
+[33m10e5ca0[m cleanup: remove backups and junk files
+[33m617a72f[m remove large file
+[33mfc7e9c6[m remove large file
+[33m4e8f83d[m initial commit
+[33m924cb81[m initial commit
+[33m3c759f5[m initial commit
+[33m32024e3[m initial commit
+[33maa942dc[m Add real trading execution
+[33m29eb236[m Add real trading execution
+[33m19c6720[m Add files via upload
+[33m0fa620e[m Add files via upload
+[33m8fa63ac[m Create trading.py
+[33m4f933fd[m Create trading.py
+[33m395f74a[m Update README.md
+[33mabd2109[m Update README.md
+[33meb7b713[m Update README.md
+[33m288a3e1[m Update README.md
+[33m5b30ad1[m Update package requirements with minimum versions
+[33m57bf589[m Update package requirements with minimum versions
+[33m1f5ef81[m Add updated telegram_bot.py (new nano version)
+[33m300fd99[m Add updated telegram_bot.py (new nano version)
+[33mda002c0[m Delete telegram_bot.py
+[33mf30a096[m Delete telegram_bot.py
+[33mea853c4[m Bump version to v6.0 and enhance README content
+[33m991d360[m Bump version to v6.0 and enhance README content
+[33m172f4a6[m docs: add README
+[33mc003c46[m feat: BrothaBot v5.0 - Solana AI agent with x402, token gating, DCA, private sends
