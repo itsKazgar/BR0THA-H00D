@@ -1,0 +1,676 @@
+"""
+brotha_api.py — BR0THA Dashboard API Server
+Fixed: duplicate routes, /status shape, POST /votes, POST /keys, /env/update
+
+Run: uvicorn brotha_api:app --host 0.0.0.0 --port 8000 --reload
+"""
+
+import os, sys, sqlite3, json, time, subprocess, random
+from datetime import datetime
+from pathlib import Path
+
+BOT_DIR = Path(__file__).parent
+sys.path.insert(0, str(BOT_DIR))
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import Optional, List
+from dotenv import load_dotenv
+
+load_dotenv(BOT_DIR / ".env", override=True)
+
+# ── lazy imports ───────────────────────────────────────────────────────────────
+try:
+    from agent_personas import COUNCIL_CONFIG, PERSONAS
+    PERSONAS_OK = True
+except Exception as e:
+    PERSONAS_OK = False
+    PERSONAS = {}
+    COUNCIL_CONFIG = {}
+    print(f"[WARN] agent_personas: {e}")
+
+try:
+    from paper_trader import get_portfolio, get_open_positions, init_paper_db
+    PAPER_OK = True
+except Exception as e:
+    PAPER_OK = False
+    print(f"[WARN] paper_trader: {e}")
+
+DB_PATH  = BOT_DIR / "data" / "agent.db"
+ENV_PATH = BOT_DIR / ".env"
+
+app = FastAPI(title="BR0THA API", version="2.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+_bot_process = None
+
+# ── helpers ────────────────────────────────────────────────────────────────────
+
+def db():
+    os.makedirs(DB_PATH.parent, exist_ok=True)
+    return sqlite3.connect(DB_PATH)
+
+def write_env_key(key: str, value: str):
+    lines = []
+    found = False
+    if ENV_PATH.exists():
+        for line in ENV_PATH.read_text().splitlines():
+            if line.strip().startswith(f"{key}="):
+                lines.append(f"{key}={value}")
+                found = True
+            else:
+                lines.append(line)
+    if not found:
+        lines.append(f"{key}={value}")
+    ENV_PATH.write_text("\n".join(lines) + "\n")
+
+def fear_and_greed() -> dict:
+    import httpx
+    try:
+        r = httpx.get("https://api.alternative.me/fng/?limit=1", timeout=5)
+        d = r.json()["data"][0]
+        return {"value": int(d["value"]), "label": d["value_classification"]}
+    except:
+        return {"value": 50, "label": "Neutral"}
+
+def bot_running() -> bool:
+    global _bot_process
+    if _bot_process and _bot_process.poll() is None:
+        return True
+    try:
+        import psutil
+        for proc in psutil.process_iter(["cmdline"]):
+            cmdline = " ".join(proc.info["cmdline"] or [])
+            if "loop.py" in cmdline or "telegram_bot.py" in cmdline:
+                return True
+    except:
+        pass
+    return False
+
+# ── startup ────────────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+def startup():
+    os.makedirs(BOT_DIR / "data", exist_ok=True)
+    if PAPER_OK:
+        try:
+            init_paper_db()
+        except:
+            pass
+    print("BR0THA API v2 running — http://0.0.0.0:8000")
+    print("Docs → http://localhost:8000/docs")
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  STATUS  —  dashboard reads: trades, version, positions[]
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/status")
+def get_status():
+    fg = fear_and_greed()
+
+    # open positions for the positions table
+    positions = []
+    trade_count = 0
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT token, entry_price, size_usd, pnl_pct, 'open' "
+                "FROM positions WHERE status='OPEN'"
+            ).fetchall()
+            for r in rows:
+                positions.append({
+                    "symbol":   r[0],
+                    "strategy": "council",
+                    "amount":   round((r[2] or 0) / max(r[1] or 1, 0.0001), 4),
+                    "pnl":      round(r[3] or 0, 2),
+                    "status":   r[4],
+                })
+            trade_count = len(rows)
+    except:
+        pass
+
+    return {
+        # fields the dashboard stats cards read
+        "trades":   trade_count,
+        "version":  "2.0",
+        "positions": positions,
+        # extra context
+        "running":       bot_running(),
+        "fear_greed":    fg["value"],
+        "fg_label":      fg["label"],
+        "paper_trading": COUNCIL_CONFIG.get("paper_trading", True) if PERSONAS_OK else True,
+        "ts":            datetime.utcnow().isoformat(),
+    }
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  VOTES  —  GET returns history, POST runs a live council vote
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/votes")
+def get_vote_log(limit: int = 20):
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT token, agent, decision, confidence, weight, timestamp "
+                "FROM council_votes ORDER BY timestamp DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+        return [
+            {"token": r[0], "agent": r[1], "decision": r[2],
+             "confidence": r[3], "weight": r[4], "ts": r[5]}
+            for r in rows
+        ]
+    except:
+        return []
+
+
+class VoteRequest(BaseModel):
+    agents: list
+    user_id: str = "dashboard"
+    token: Optional[str] = None
+
+@app.post("/votes")
+async def run_council_vote(req: VoteRequest):
+    """
+    Dashboard POSTs here to trigger a live council vote.
+    Tries ai_engine / multi_model_router if available,
+    falls back to a clean weighted simulation.
+    """
+    agents = req.agents
+    if not agents:
+        raise HTTPException(400, "no agents provided")
+
+    # ── try real AI vote ───────────────────────────────────────────────────
+    try:
+        from multi_model_router import council_vote, tally_votes
+        token = req.token or "SOL"
+        raw_votes = await council_vote(agents, token)
+        result    = tally_votes(raw_votes, agents)
+        return result
+    except Exception as e:
+        print(f"[votes] real vote failed ({e}), using weighted sim")
+
+    # ── weighted simulation fallback ───────────────────────────────────────
+    thesis_bias = {
+        "momentum":    0.65,
+        "dip_buy":     0.60,
+        "breakout":    0.70,
+        "whale_follow":0.58,
+        "ai":          0.62,
+    }
+
+    votes = []
+    for a in agents:
+        bias    = thesis_bias.get(a.get("thesis", "ai"), 0.60)
+        rnd     = random.random()
+        decision = "buy" if rnd < bias else ("hold" if rnd < bias + 0.25 else "sell")
+        conf    = random.randint(52, 94)
+        votes.append({
+            "agent":      a.get("name", "agent"),
+            "provider":   a.get("provider", "sim"),
+            "decision":   decision,
+            "confidence": conf,
+            "weight":     a.get("weight", 1),
+            "reasoning":  f"{decision.title()} signal — {conf}% confidence based on {a.get('thesis','ai')} thesis.",
+        })
+
+    total_w  = sum(v["weight"] for v in votes)
+    buy_w    = sum(v["weight"] for v in votes if v["decision"] == "buy")
+    buy_pct  = round(buy_w / max(total_w, 1) * 100)
+    threshold = agents[0].get("threshold", 60) if agents else 60
+    decision  = "BUY" if buy_pct >= threshold else "HOLD"
+
+    return {
+        "votes":     votes,
+        "buy_pct":   buy_pct,
+        "decision":  decision,
+        "simulated": True,
+    }
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  WALLET
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/wallet/{address}")
+async def wallet_balance(address: str):
+    import httpx
+    helius_key = os.getenv("HELIUS_API_KEY", "")
+    rpc = f"https://mainnet.helius-rpc.com/?api-key={helius_key}" if helius_key \
+          else "https://api.mainnet-beta.solana.com"
+    try:
+        r = httpx.post(
+            rpc,
+            json={"jsonrpc": "2.0", "id": 1, "method": "getBalance", "params": [address]},
+            timeout=10,
+        )
+        bal = r.json()["result"]["value"] / 1e9
+    except:
+        bal = 0.0
+    return {"address": address, "sol": round(bal, 6)}
+
+@app.post("/wallet/create")
+def wallet_create():
+    try:
+        from solders.keypair import Keypair
+        from base58 import b58encode
+        kp = Keypair()
+        return {
+            "address":         str(kp.pubkey()),
+            "private_key_b58": b58encode(bytes(kp)).decode(),
+            "warning":         "Save your private key NOW — it is never shown again.",
+        }
+    except ImportError:
+        raise HTTPException(503, "Run: pip install solders base58")
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  TRADE
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+class SwapRequest(BaseModel):
+    user_id:    str   = "dashboard"
+    from_token: str   = "SOL"
+    to_token:   str
+    amount_sol: float
+
+@app.post("/trade/swap")
+async def trade_swap(req: SwapRequest):
+    try:
+        from trading import jupiter_swap
+        return await jupiter_swap(req.user_id, req.from_token, req.to_token, req.amount_sol)
+    except ImportError:
+        return {"ok": False, "error": "trading.py not available — is it in ~/BR0THA_bot/?"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.get("/trade/history")
+def trade_history(user_id: str = "dashboard", limit: int = 20):
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT token_symbol, action, amount_sol, price, pnl_sol, signature, ts "
+                "FROM trade_history WHERE user_id=? ORDER BY ts DESC LIMIT ?",
+                (user_id, limit),
+            ).fetchall()
+        return {"history": [
+            {"symbol": r[0], "action": r[1], "amount": r[2],
+             "price": r[3], "pnl": r[4] or 0, "sig": r[5], "ts": r[6]}
+            for r in rows
+        ]}
+    except Exception as e:
+        # table may not exist yet — return empty gracefully
+        return {"history": [], "note": str(e)}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  TOKEN LOOKUP
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/token/{query}")
+def token_lookup(query: str):
+    import httpx, urllib.parse
+    try:
+        r = httpx.get(
+            f"https://api.dexscreener.com/latest/dex/search/?q={urllib.parse.quote(query)}",
+            timeout=10,
+        )
+        pairs = [p for p in r.json().get("pairs", []) if p.get("chainId") == "solana"]
+        if not pairs:
+            return {"ok": False, "error": "not found on Solana"}
+        best = sorted(
+            pairs,
+            key=lambda p: float(p.get("liquidity", {}).get("usd", 0) or 0),
+            reverse=True,
+        )[0]
+        return {
+            "ok":     True,
+            "mint":   best["baseToken"]["address"],
+            "symbol": best["baseToken"]["symbol"],
+            "name":   best["baseToken"]["name"],
+            "price":  float(best.get("priceUsd") or 0),
+            "mcap":   float(best.get("fdv") or 0),
+            "liq":    float(best.get("liquidity", {}).get("usd") or 0),
+        }
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  MARKET
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/market/{mtype}")
+def market_data(mtype: str):
+    import httpx
+    try:
+        if mtype == "sol":
+            r = httpx.get(
+                "https://api.coingecko.com/api/v3/simple/price"
+                "?ids=solana,bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true",
+                timeout=10,
+            )
+            d = r.json()
+            return {"text": (
+                f"SOL  ${d['solana']['usd']:.2f}  ({d['solana']['usd_24h_change']:+.1f}%)\n"
+                f"BTC  ${d['bitcoin']['usd']:,.0f}  ({d['bitcoin']['usd_24h_change']:+.1f}%)\n"
+                f"ETH  ${d['ethereum']['usd']:,.0f}  ({d['ethereum']['usd_24h_change']:+.1f}%)"
+            )}
+
+        elif mtype == "trending":
+            r = httpx.get("https://api.coingecko.com/api/v3/search/trending", timeout=10)
+            coins = r.json().get("coins", [])[:8]
+            lines = ["# coingecko trending\n"]
+            for i, c in enumerate(coins, 1):
+                item = c["item"]
+                lines.append(f"{i:2}.  {item['symbol']:<10} {item['name']}")
+            return {"text": "\n".join(lines)}
+
+        elif mtype == "pump":
+            try:
+                from market_data import get_pumpfun_new
+                coins = get_pumpfun_new(10)
+                lines = ["# pump.fun — latest\n"]
+                for c in coins[:8]:
+                    lines.append(
+                        f"{'👑' if c.get('king_of_hill') else '•'} "
+                        f"{c['symbol']:<10} ${c['mcap']:>10,.0f}"
+                    )
+                return {"text": "\n".join(lines)}
+            except:
+                return {"text": "market_data.py not available"}
+
+        elif mtype == "grad":
+            try:
+                from market_data import get_pumpfun_graduating
+                coins = get_pumpfun_graduating()
+                lines = ["# near graduation → raydium\n"]
+                for c in coins:
+                    lines.append(
+                        f"🚀 {c['symbol']:<10} {c['pct_to_grad']:.1f}% away  ${c['mcap']:,.0f}"
+                    )
+                return {"text": "\n".join(lines)}
+            except:
+                return {"text": "market_data.py not available"}
+
+        else:
+            return {"text": f"unknown type: {mtype}"}
+
+    except Exception as e:
+        return {"text": f"error: {e}"}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  AGENTS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+class NewAgent(BaseModel):
+    id:        str
+    name:      str
+    provider:  str  = "custom"
+    model:     str
+    thesis:    str  = "ai"
+    size:      float = 0.05
+    weight:    int  = 1
+    threshold: int  = 60
+    active:    bool = True
+
+@app.get("/agents")
+def get_agents():
+    if not PERSONAS_OK:
+        return {"agents": [], "config": {}}
+    agents = []
+    for key, persona in PERSONAS.items():
+        if key == "orchestrator":
+            continue
+        agents.append({
+            "id":     key,
+            "name":   persona.get("name", key),
+            "model":  persona.get("model", ""),
+            "role":   persona.get("role", ""),
+            "weight": COUNCIL_CONFIG.get("weights", {}).get(key, 1),
+            "active": True,
+        })
+    return {"agents": agents, "config": COUNCIL_CONFIG}
+
+@app.post("/agents")
+def add_agent(body: NewAgent):
+    if PERSONAS_OK:
+        PERSONAS[body.id] = {
+            "model":    body.model,
+            "name":     body.name,
+            "role":     body.thesis,
+            "provider": body.provider,
+            "system":   f"You are {body.name}, a trading council agent. Thesis: {body.thesis}. Be concise.",
+        }
+        COUNCIL_CONFIG.setdefault("weights", {})[body.id] = body.weight
+    return {"ok": True, "agent": body.id}
+
+@app.delete("/agents/{agent_id}")
+def remove_agent(agent_id: str):
+    if PERSONAS_OK:
+        PERSONAS.pop(agent_id, None)
+        COUNCIL_CONFIG.get("weights", {}).pop(agent_id, None)
+    return {"ok": True}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  API KEYS  —  dashboard sends flat dict of ALL keys at once
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TRACKED_KEYS = {
+    # AI providers (dashboard key tab)
+    "ANTHROPIC_API_KEY",
+    "OPENAI_API_KEY",
+    "GROK_API_KEY",
+    "GEMINI_API_KEY",
+    "GROQ_API_KEY",
+    "OPENROUTER_API_KEY",
+    "CEREBRAS_API_KEY",
+    # infra
+    "HELIUS_API_KEY",
+    "BIRDEYE_API_KEY",
+    "SOLTRACKER_API_KEY",
+    "TELEGRAM_TOKEN",
+    # wallet (stored in .env only, never logged)
+    "WALLET_PRIVATE_KEY_B58",
+}
+
+@app.get("/keys")
+def get_keys():
+    result = {}
+    for k in sorted(TRACKED_KEYS):
+        val = os.getenv(k, "")
+        result[k] = {"set": bool(val), "preview": (val[:4] + "****") if val else ""}
+    return result
+
+@app.post("/keys")
+def save_keys(body: dict):
+    """Accept flat dict  {KEY_NAME: value, ...}  — matches what dashboard sends."""
+    updated = []
+    for k, v in body.items():
+        if not v:
+            continue
+        write_env_key(k, v)
+        os.environ[k] = v
+        updated.append(k)
+    load_dotenv(ENV_PATH, override=True)
+    return {"ok": True, "updated": updated}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  ENV UPDATE  (legacy endpoint — dashboard tries /keys first, then this)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.post("/env/update")
+def env_update(body: dict):
+    """Same as POST /keys — kept for backward compat."""
+    updated = []
+    for k, v in body.items():
+        if not v:
+            continue
+        write_env_key(k, v)
+        os.environ[k] = v
+        updated.append(k)
+    load_dotenv(ENV_PATH, override=True)
+    return {"ok": True, "updated": updated}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  WHALE SCAN
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/whale/scan")
+def whale_scan():
+    try:
+        from trading import scan_whale_activity
+        activity = scan_whale_activity()
+        lines = ["# whale activity\n"]
+        for w in activity:
+            lines.append(
+                f"{w['wallet'][:8]}…  "
+                f"{w['sol_balance']:.2f} SOL  "
+                f"{w['recent_txns']} recent txns"
+            )
+        return {"text": "\n".join(lines)}
+    except Exception as e:
+        return {"text": f"whale scanner unavailable: {e}"}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  ROBOT CONTROL
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+class RobotRequest(BaseModel):
+    user_id:  str = "dashboard"
+    robot_id: str
+
+@app.post("/robot/activate")
+def robot_activate(req: RobotRequest):
+    try:
+        from trading import activate_robot
+        ok = activate_robot(req.user_id, req.robot_id)
+        return {"ok": ok, "robot": req.robot_id, "action": "activated"}
+    except ImportError:
+        return {"ok": False, "error": "trading.py not available"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+@app.post("/robot/deactivate")
+def robot_deactivate(req: RobotRequest):
+    try:
+        from trading import deactivate_robot
+        deactivate_robot(req.user_id, req.robot_id)
+        return {"ok": True, "robot": req.robot_id, "action": "deactivated"}
+    except ImportError:
+        return {"ok": False, "error": "trading.py not available"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  BOT CONTROL
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.post("/bot/start")
+def start_bot():
+    global _bot_process
+    if bot_running():
+        return {"ok": False, "msg": "already running"}
+    loop_path = BOT_DIR / "loop.py"
+    if not loop_path.exists():
+        return {"ok": False, "msg": "loop.py not found"}
+    _bot_process = subprocess.Popen(
+        [sys.executable, str(loop_path)],
+        cwd=str(BOT_DIR),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return {"ok": True, "pid": _bot_process.pid}
+
+@app.post("/bot/stop")
+def stop_bot():
+    global _bot_process
+    if _bot_process and _bot_process.poll() is None:
+        _bot_process.terminate()
+        _bot_process = None
+        return {"ok": True, "msg": "bot stopped"}
+    return {"ok": False, "msg": "bot not running via API"}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  PORTFOLIO / TRADES  (extra endpoints used by bot internally)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@app.get("/portfolio")
+def get_portfolio_data():
+    try:
+        cash = get_portfolio() if PAPER_OK else 1000.0
+    except:
+        cash = 1000.0
+    positions, realized_pnl, wins, losses = [], 0.0, 0, 0
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT token, entry_price, size_usd, pnl_pct FROM positions WHERE status='OPEN'"
+            ).fetchall()
+            for r in rows:
+                positions.append({
+                    "token": r[0], "entry_price": r[1],
+                    "size_usd": r[2], "pnl_pct": r[3],
+                })
+            closed = conn.execute(
+                "SELECT SUM(pnl_usd), COUNT(*) FROM positions WHERE status='CLOSED'"
+            ).fetchone()
+            realized_pnl = round(closed[0] or 0, 2)
+            wins   = conn.execute("SELECT COUNT(*) FROM positions WHERE status='CLOSED' AND pnl_usd > 0").fetchone()[0]
+            losses = conn.execute("SELECT COUNT(*) FROM positions WHERE status='CLOSED' AND pnl_usd <= 0").fetchone()[0]
+    except:
+        pass
+    total = wins + losses
+    return {
+        "cash": round(cash, 2),
+        "realized_pnl": realized_pnl,
+        "win_rate": round(wins / max(total, 1) * 100, 1),
+        "wins": wins, "losses": losses,
+        "positions": positions,
+    }
+
+@app.get("/trades")
+def get_trades(limit: int = 20):
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT token, action, price, size_usd, pnl_usd, reason, timestamp "
+                "FROM trade_log ORDER BY timestamp DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+        return [
+            {"token": r[0], "action": r[1], "price": r[2],
+             "size": r[3], "pnl": r[4], "reason": r[5], "ts": r[6]}
+            for r in rows
+        ]
+    except:
+        return []
+
+@app.get("/scans")
+def get_scan_log(limit: int = 10):
+    try:
+        with db() as conn:
+            rows = conn.execute(
+                "SELECT tokens_scanned, tokens_approved, top_token, timestamp "
+                "FROM scan_log ORDER BY timestamp DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+        return [{"scanned": r[0], "approved": r[1], "top": r[2], "ts": r[3]} for r in rows]
+    except:
+        return []
