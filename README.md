@@ -69,3 +69,18 @@ Auto-detects Hermes. No config needed.
 
 ## License
 MIT — use it, fork it, improve it.
+
+## Dashboard
+
+A terminal-style web dashboard for monitoring your agents live.
+
+**Start the API:**
+
+    uvicorn brotha_api:app --host 0.0.0.0 --port 8000
+
+**Then open in your browser:**
+
+    http://localhost:8000
+
+Shows live agent status, trade history, balance, signals, and market data.
+Run alongside `python Start.py` for full live view.
