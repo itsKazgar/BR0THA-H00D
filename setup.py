@@ -225,25 +225,56 @@ def setup_telegram():
         print(f"  {GR}✅ Telegram configured{RS}")
 
 def setup_solana():
-    print(f"\n{BD}Solana Wallet{RS} {RD}[LIVE TRADING — real money]{RS}")
-    print(f"  Only needed if you want real trades (not paper mode)")
-    
-    choice = input(f"  Configure live trading? (y/n) [{DM}n{RS}]: ").strip().lower()
-    if choice != "y":
-        return
+    print(f"\n{BD}Solana Wallet{RS}")
+    print(f"  {DM}Needed for live trading. Paper mode works without a wallet.{RS}")
+    print(f"\n  {BD}[1]{RS} Generate a new wallet automatically {GR}(recommended){RS}")
+    print(f"  {BD}[2]{RS} Import existing private key {DM}(Phantom, etc){RS}")
+    print(f"  {BD}[3]{RS} Skip — paper trading only")
+    choice = input(f"\n  Choice (1/2/3) [3]: ").strip() or "3"
 
-    print(f"  {RD}{BD}WARNING: Never share your private key with anyone{RS}")
-    print(f"  Export from Phantom: Settings > Security > Export Private Key")
-    key = input("  Wallet private key (base58): ").strip()
-    rpc = input("  Solana RPC (leave blank for default): ").strip()
-    
-    if key:
-        save_key("WALLET_PRIVATE_KEY", key)
-        save_key("LIVE_MODE", "true")
-        if rpc:
-            save_key("SOLANA_RPC", rpc)
-        print(f"  {GR}✅ Live trading configured{RS}")
-        print(f"  {YL}⚠️  Test with small amounts first!{RS}")
+    if choice == "1":
+        print(f"  {YL}Generating new Solana wallet...{RS}")
+        try:
+            from solders.keypair import Keypair
+            import base58
+            kp = Keypair()
+            address = str(kp.pubkey())
+            private_key = base58.b58encode(bytes(kp)).decode()
+            save_key("WALLET_ADDRESS", address)
+            save_key("WALLET_PRIVATE_KEY", private_key)
+            print(f"\n  {GR}✅ New wallet created!{RS}")
+            print(f"  {BD}Address:{RS}     {address}")
+            print(f"  {BD}Private Key:{RS} {private_key}")
+            print(f"  {RD}{BD}⚠️  Save your private key somewhere safe — shown only once!{RS}")
+            rpc = input("  Solana RPC (leave blank for default): ").strip()
+            if rpc: save_key("SOLANA_RPC", rpc)
+        except ImportError:
+            print(f"  {RD}❌ Missing: pip install solders base58{RS}")
+
+    elif choice == "2":
+        print(f"  {RD}{BD}WARNING: Never share your private key with anyone{RS}")
+        print(f"  {DM}Export from Phantom: Settings > Security > Export Private Key{RS}")
+        key = input("  Paste your private key (base58): ").strip()
+        if key:
+            try:
+                from solders.keypair import Keypair
+                import base58
+                kp = Keypair.from_bytes(base58.b58decode(key))
+                address = str(kp.pubkey())
+                save_key("WALLET_ADDRESS", address)
+                save_key("WALLET_PRIVATE_KEY", key)
+                save_key("LIVE_MODE", "true")
+                rpc = input("  Solana RPC (leave blank for default): ").strip()
+                if rpc: save_key("SOLANA_RPC", rpc)
+                print(f"  {GR}✅ Wallet imported: {address}{RS}")
+                print(f"  {YL}⚠️  Test with small amounts first!{RS}")
+            except Exception as e:
+                print(f"  {RD}❌ Invalid key: {e}{RS}")
+        else:
+            print(f"  {YL}Skipped{RS}")
+
+    else:
+        print(f"  {YL}Skipped — paper trading mode{RS}")
 
 def print_summary():
     load_dotenv(ENV_PATH, override=True)
@@ -332,6 +363,7 @@ def main():
     print(f"\n{CY}{BD}━━━ OTHER SETUP ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{RS}")
     setup_telegram()
     setup_solana()
+    setup_wallet()
 
     # Summary
     print_summary()

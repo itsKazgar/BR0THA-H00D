@@ -27,7 +27,7 @@ def shutdown(sig=None, frame=None):
         print(CY + "\n  Shutting down all agents..." + RS)
         for p, script in procs:
             try:    p.terminate(); p.wait(timeout=3)
-            except:
+            except: 
                 try: p.kill()
                 except: pass
         print(GR + "  All agents stopped. See you next run.\n" + RS)
@@ -39,6 +39,7 @@ signal.signal(signal.SIGINT,  shutdown)
 signal.signal(signal.SIGTERM, shutdown)
 
 def kill_orphans():
+    """Kill any agents left over from a previous session."""
     agent_scripts = [os.path.basename(a[0]) for a in AGENTS]
     result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
     killed = []
@@ -55,11 +56,11 @@ def kill_orphans():
         print(YL + f"  ⚠  Cleaned up {len(killed)} orphan agent(s) from last session" + RS)
         time.sleep(1)
 
-def box(text="", color="", width=55):
+def box(text="", color="", width=53):
     pad = width - len(text)
     return CY + "  ║ " + color + text + RS + " " * pad + CY + "║" + RS
 
-W = 55
+W = 53
 
 os.system("clear")
 
@@ -89,11 +90,11 @@ print(box("SELECT MODE", BD + CY))
 print(box())
 print(CY + "  ╠" + "═" * W + "╣")
 print(box())
-print(box("[1]  Solo Paper Trade  — auto trader, no agents", GR))
-print(box("[2]  Paper + Agents    — auto trader + 8 agents ",  CY))
-print(box("[3]  Live Trading      — real funds, all agents active",   MG))
-print(box("[4]  Custom Mode       — build & edit your own agents",    YL))
-print(box("[0]  Exit",                                                DM))
+print(box("[1]  Paper Trade   — simulate trades, no real $", GR))
+print(box("[2]  Agents Only   — run intel, no trading",      CY))
+print(box("[3]  Full AI       — all 8 agents, AI brain",     YL))
+print(box("[4]  Go Live       — real trades (fund wallet)",  MG))
+print(box("[0]  Exit",                                       DM))
 print(box())
 print(CY + "  ╚" + "═" * W + "╝" + RS)
 print()
@@ -104,44 +105,18 @@ except (EOFError, KeyboardInterrupt):
     shutdown()
 print()
 
+TRADING = ["agents/trading/scanner.py", "agents/trading/trader.py"]
+INTEL   = [a for a in AGENTS if a[0] not in TRADING]
+
 if choice == "0":
     print(DM + "  Exited.\n" + RS); sys.exit(0)
-
 elif choice == "1":
-    # ── Solo Paper Trade — trader runs alone, no agent signals ──────────────────────────
-    os.environ["TRADE_MODE"] = "paper"
-    solo = [("agents/trading/trader.py", "Trader  — running solo, no agent signals")]
-    runnable = [(p, d) for p, d in solo if os.path.exists(os.path.join(ROOT, p))]
-    if not runnable:
-        print(RD + "  agents/trading/trader.py not found.\n" + RS); sys.exit(1)
-    print(GR + BD + "  SOLO PAPER TRADE — trader only, no agent signals\n" + RS)
-    print(DM + "  ─────────────────────────────────────────────────────────" + RS)
-    for script, desc in runnable:
-        p = subprocess.Popen([PYTHON, script], cwd=ROOT)
-        procs.append((p, script))
-        print(CY + f"  + {desc}" + DM + f"  (pid {p.pid})" + RS)
-    print()
-    print(CY + BD + "  ╔" + "═" * W + "╗")
-    print(CY + BD + "  ║ " + RS + GR + BD + "SOLO TRADER IS LIVE  · paper mode" + RS + " " * 20 + CY + BD + "║" + RS)
-    print(CY + BD + box("Ctrl+C to shut down", DM))
-    print(CY + BD + "  ╚" + "═" * W + "╝" + RS)
-    print()
-    while True:
-        time.sleep(5)
-        for i, (p, script) in enumerate(procs):
-            if p.poll() is not None:
-                print(RD + f"  ! {script} crashed — restarting..." + RS)
-                time.sleep(2)
-                new_p = subprocess.Popen([PYTHON, script], cwd=ROOT)
-                procs[i] = (new_p, script)
-                print(GR + f"  + Restarted (pid {new_p.pid})" + RS)
-
+    label = "Paper Trade"; active = AGENTS; os.environ["TRADE_MODE"] = "paper"
 elif choice == "2":
-    label  = "Paper + Agents"
-    active = AGENTS
-    os.environ["TRADE_MODE"] = "paper"
-
+    label = "Agents Only"; active = INTEL;  os.environ["TRADE_MODE"] = "paper"
 elif choice == "3":
+    label = "Full AI";     active = AGENTS; os.environ["TRADE_MODE"] = "paper"
+elif choice == "4":
     print(RD + BD + "  ⚠  LIVE MODE — real money will be traded!" + RS)
     print()
     wallet = os.environ.get("WALLET_ADDRESS", "")
@@ -153,38 +128,11 @@ elif choice == "3":
     except: shutdown()
     if confirm != "YES":
         print(DM + "\n  Cancelled.\n" + RS); sys.exit(0)
-    label  = "LIVE"
-    active = AGENTS
-    os.environ["TRADE_MODE"] = "live"
+    label = "LIVE"; active = AGENTS; os.environ["TRADE_MODE"] = "live"
     print()
-
-elif choice == "4":
-    # ── Custom Mode — launch dashboard ────────────────────────────────────
-    os.environ["TRADE_MODE"] = "paper"
-    print(YL + BD + "  CUSTOM MODE — launching dashboard\n" + RS)
-    print(DM + "  Starting API server + dashboard..." + RS)
-    print()
-    api_proc = subprocess.Popen(
-        [PYTHON, "-m", "uvicorn", "brotha_api:app",
-         "--host", "0.0.0.0", "--port", "8000", "--reload"],
-        cwd=ROOT
-    )
-    time.sleep(2)
-    print(GR + "  ✅ Dashboard running at: " + BD + "http://localhost:8000" + RS)
-    print(DM + "  • Add / edit / delete agents from the browser" + RS)
-    print(DM + "  • Ctrl+C here to shut down the dashboard" + RS)
-    print()
-    try:
-        api_proc.wait()
-    except KeyboardInterrupt:
-        api_proc.terminate()
-        print(CY + "\n  Dashboard stopped.\n" + RS)
-    sys.exit(0)
-
 else:
     print(DM + "  Unknown option — exited.\n" + RS); sys.exit(0)
 
-# ── modes 2 & 3 — launch agents ───────────────────────────────────────────
 runnable = [(p, d) for p, d in active if os.path.exists(os.path.join(ROOT, p))]
 skipped  = [(p, d) for p, d in active if not os.path.exists(os.path.join(ROOT, p))]
 
@@ -203,10 +151,12 @@ print(DM + "  ──────────────────────
 
 for i, (script, desc) in enumerate(runnable):
     if i > 0: time.sleep(1.5)
-    p = subprocess.Popen([PYTHON, script], cwd=ROOT)
+    p = subprocess.Popen([PYTHON, script], cwd=ROOT,
+        stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
     procs.append((p, script))
     print(CY + f"  + {desc}" + DM + f"  (pid {p.pid})" + RS)
 
+mode_tag = (RD + BD + " ⚡ LIVE " + RS) if label == "LIVE" else (GR + f" {label} " + RS)
 n = len(procs)
 print()
 print(CY + BD + "  ╔" + "═" * W + "╗")
@@ -222,6 +172,7 @@ while True:
         if p.poll() is not None:
             print(RD + f"  ! {script} crashed (exit {p.returncode}) — restarting..." + RS)
             time.sleep(2)
-            new_p = subprocess.Popen([PYTHON, script], cwd=ROOT)
+            new_p = subprocess.Popen([PYTHON, script], cwd=ROOT,
+                stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
             procs[i] = (new_p, script)
             print(GR + f"  + Restarted {script} (pid {new_p.pid})" + RS)

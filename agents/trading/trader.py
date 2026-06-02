@@ -16,8 +16,8 @@ MAX_TRADE_PCT    = 0.08       # base 3% of balance per trade — compounds autom
 MAX_POSITIONS    = 3          # hold at most 3 coins at once
 MIN_SCORE        = 85         # minimum scanner score to consider
 MIN_CONFIDENCE   = 50         # minimum LLM confidence to execute
-TAKE_PROFIT_PCT  = 0.08       # TP at +15% — take money off the table
-STOP_LOSS_PCT    = 0.07       # SL at -10% — give room to breathe
+TAKE_PROFIT_PCT  = 0.06       # TP at +15% — take money off the table
+STOP_LOSS_PCT    = 0.12       # SL at -10% — give room to breathe
 TRAIL_ACTIVATION = 0.05       # start trailing after +5% gain
 TRAIL_DISTANCE   = 0.04       # trail 4% below peak
 MAX_HOLD_MINS    = 15       # force exit after 2 hours
@@ -61,15 +61,15 @@ class Trader:
         brain.init_db()
         self.mode      = "LIVE" if LIVE_MODE else "PAPER"
         self.keypair   = self._load_wallet()
-        # Load persisted state but ALWAYS reset balance to PAPER_BALANCE
+        # Load persisted state and keep balance
         # on a fresh start if no positions are open (avoids compounding bugs)
         s = brain.load_state("trader")
         existing_positions = s.get("positions", {})
         if not existing_positions:
             # Clean start — reset balance
-            self.balance   = PAPER_BALANCE
-            self.total_pnl = 0.0
-            self.trades    = 0
+            self.balance   = s.get("balance", PAPER_BALANCE)
+            self.total_pnl = s.get("total_pnl", 0.0)
+            self.trades    = s.get("trades", 0)
         else:
             self.balance   = s.get("balance", PAPER_BALANCE)
             self.total_pnl = s.get("total_pnl", 0.0)
@@ -299,7 +299,7 @@ class Trader:
         if age < 4:
             # SCALP MODE — tighter TP but enough room to breathe
             tp       = round(price * 1.15, 10)   # +15% TP
-            sl       = round(price * 0.94, 10)   # -6% SL (tighter, faster exit)
+            sl       = round(price * 0.90, 10)   # -6% SL (tighter, faster exit)
             hold_cap = 20                          # 20 mins max
             mode_tag = "⚡ SCALP"
         else:
@@ -566,7 +566,7 @@ class Trader:
 
             # 6. Flat exit — 25% of hold_cap, so scalp=5min, swing=30min
             pos_hold_cap = pos.get("hold_cap", MAX_HOLD_MINS)
-            flat_exit = max(5, pos_hold_cap * 0.25)
+            flat_exit = max(3, pos_hold_cap * 0.15)
             if held_mins >= flat_exit and -2 < pnl_pct < 2:
                 cooldown[mint] = {"ts": time.time(), "mins": COOLDOWN_HOLD}
                 self.sell(mint, f"flat after {int(held_mins)}min")
@@ -734,16 +734,16 @@ class Trader:
                 # Re-validate with fresh data before buying
                 # Reject if momentum has flipped since signal was generated
                 buy_ratio = buys / max(1, buys + sells)
-                if ch1h < 3:
+                if ch1h < -15:
                     print(f"  [trader] ❌ {name} rejected — 1h {ch1h:+.1f}% too weak")
                     acted_on.add(mint)
                     continue
-                if ch1h > 80:
+                if ch1h > 800:
                     print(f"  [trader] ❌ {name} rejected — already pumped {ch1h:.0f}% in 1h")
                     acted_on.add(mint)
                     continue
-                if buy_ratio < 0.60:
-                    print(f"  [trader] ❌ {name} rejected — buy ratio {buy_ratio:.0%} (need 70%+)")
+                if buy_ratio < 0.52:
+                    print(f"  [trader] ❌ {name} rejected — buy ratio {buy_ratio:.0%} (need 52%+)")
                     acted_on.add(mint)
                     continue
                 if liq < 10_000:

@@ -1,0 +1,1 @@
+/home/kazgar/BR0THER-H00D/agents/trading/news_scout.py

@@ -1,0 +1,120 @@
+import subprocess, sys, os, time
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+
+CY  = "\033[96m"
+GR  = "\033[92m"
+YL  = "\033[93m"
+RD  = "\033[91m"
+DM  = "\033[2m"
+RS  = "\033[0m"
+BD  = "\033[1m"
+
+os.system("clear")
+
+print(CY + BD + r"""
+██████╗ ██████╗  ██████╗ ████████╗██╗  ██╗███████╗██████╗ ██╗  ██╗ ██████╗  ██████╗ ██████╗ 
+██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██║  ██║██╔════╝██╔══██╗██║  ██║██╔═══██╗██╔═══██╗██╔══██╗
+██████╔╝██████╔╝██║   ██║   ██║   ███████║█████╗  ██████╔╝███████║██║   ██║██║   ██║██║  ██║
+██╔══██╗██╔══██╗██║   ██║   ██║   ██╔══██║██╔══╝  ██╔══██╗██╔══██║██║   ██║██║   ██║██║  ██║
+██████╔╝██║  ██║╚██████╔╝   ██║   ██║  ██║███████╗██║  ██║██║  ██║╚██████╔╝╚██████╔╝██████╔╝
+╚═════╝ ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═════╝
+""" + RS)
+
+print(CY + "        Solana Alpha Collective  —  7 Agents  —  Paper Mode" + RS)
+print(DM + "  ─────────────────────────────────────────────────────────" + RS)
+print()
+
+from core import brain
+brain.init_db()
+brain.brain_summary()
+
+print()
+print(CY + "  ╔═══════════════════════════════════════════════════╗")
+print(       "  ║                  SELECT MODE                      ║")
+print(       "  ╠═══════════════════════════════════════════════════╣")
+print(       "  ║                                                   ║")
+print(GR +   "  ║   [1]  Paper Trade   — rule-based, zero config   ║")
+print(       "  ║   [2]  Full AI       — all 7 agents, AI brain    ║")
+print(YL +   "  ║   [3]  Dashboard     — manage agents visually    ║")
+print(CY +   "  ║   [4]  Quick Start   — same as last time         ║")
+print(       "  ║                                                   ║")
+print(       "  ╚═══════════════════════════════════════════════════╝" + RS)
+print()
+
+PYTHON = sys.executable
+ROOT   = os.path.dirname(os.path.abspath(__file__))
+
+AGENTS = [
+    ("agents/trading/scanner.py",      "Scanner       — hunts trending tokens across all sources"),
+    ("agents/intel/whale_tracker.py",  "Whale Tracker — watches smart wallet moves"),
+    ("agents/intel/news_scout.py",     "News Scout    — scans crypto news & sentiment"),
+    ("agents/intel/pump_hunter.py",    "Pump Hunter   — finds early pump.fun gems"),
+    ("agents/intel/risk_manager.py",   "Risk Manager  — monitors portfolio & enforces limits"),
+    ("agents/intel/analyst.py",        "Analyst       — AI reasoning on every signal"),
+    ("agents/trading/trader.py",       "Trader        — executes paper trades"),
+    ("agents/intel/memory_keeper.py",  "Memory Keeper — logs learnings every 5 min"),
+]
+
+choice = input(CY + "  Select (1-4, or Enter for quick start): " + RS).strip()
+print()
+
+if choice == "3":
+    print(YL + "  Open the dashboard: python dashboard.py\n" + RS)
+    sys.exit(0)
+elif choice == "1":
+    print(GR + "  Paper Trade mode — launching rule-based agents...\n" + RS)
+    AGENTS = [a for a in AGENTS if "trader" not in a[0]]
+elif choice == "2":
+    print(GR + "  Full AI mode — launching all 7 agents...\n" + RS)
+else:
+    print(GR + "  Quick Start — launching all agents...\n" + RS)
+
+print(DM + "  ─────────────────────────────────────────────────────────" + RS)
+
+procs = []
+for i, (script, desc) in enumerate(AGENTS):
+    if i > 0:
+        time.sleep(2)
+    p = subprocess.Popen(
+        [PYTHON, script],
+        cwd=ROOT,
+        stdout=open(os.devnull, 'w'),
+        stderr=open(os.devnull, 'w')
+    )
+    procs.append((p, script))
+    print(CY + f"  + {desc}" + DM + f"  (pid {p.pid})" + RS)
+    time.sleep(0.3)
+
+print()
+print(CY + BD + "  ╔═══════════════════════════════════════════════════╗")
+print(          f"  ║   BR0THER-H00D IS LIVE — {len(AGENTS)} agents running" + " " * (24 - len(str(len(AGENTS)))) + "║")
+print(           "  ║   Logs suppressed — agents running in background  ║")
+print(           "  ║   Press Ctrl+C to shut down all agents            ║")
+print(           "  ╚═══════════════════════════════════════════════════╝" + RS)
+print()
+
+try:
+    while True:
+        time.sleep(5)
+        for i, (p, script) in enumerate(procs):
+            if p.poll() is not None:
+                print(RD + f"  ! {script} crashed (exit {p.returncode}) — restarting..." + RS)
+                time.sleep(3)
+                new_p = subprocess.Popen(
+                    [PYTHON, script],
+                    cwd=ROOT,
+                    stdout=open(os.devnull, 'w'),
+                    stderr=open(os.devnull, 'w')
+                )
+                procs[i] = (new_p, script)
+                print(GR + f"  + Restarted {script} (pid {new_p.pid})" + RS)
+except KeyboardInterrupt:
+    print(CY + "\n  Shutting down all agents..." + RS)
+    for p, script in procs:
+        try:
+            p.terminate()
+            p.wait(timeout=3)
+        except Exception:
+            p.kill()
+    print(GR + "  Done. See you next run.\n" + RS)

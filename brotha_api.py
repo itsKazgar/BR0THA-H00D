@@ -795,3 +795,8 @@ def get_scan_log(limit: int = 10):
         return [{"scanned": r[0], "approved": r[1], "top": r[2], "ts": r[3]} for r in rows]
     except:
         return []
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+

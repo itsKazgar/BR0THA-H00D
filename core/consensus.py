@@ -24,7 +24,7 @@ COUNCIL = [
     {"name": "Scanner",       "weight": 1, "role": "signal source"},
 ]
 
-VOTES_NEEDED = 9  # weighted votes needed to pass
+VOTES_NEEDED = 7  # weighted votes needed to pass
 
 def _vote_analyst(coin: dict, score: int, reasons: list) -> dict:
     """Analyst votes based on score + LLM reasoning."""
@@ -50,8 +50,8 @@ def _vote_risk_manager(coin: dict, score: int) -> dict:
 
     flags = []
     if age > 48:          flags.append(f"too old ({age:.0f}h)")
-    if liq < 20_000:      flags.append(f"thin liq (${liq:,.0f})")
-    if ch1h > 40:         flags.append(f"already pumped {ch1h:.0f}%")
+    if liq < 10_000:      flags.append(f"thin liq (${liq:,.0f})")
+    if ch1h > 600:         flags.append(f"already pumped {ch1h:.0f}%")
     if mcap > 50_000_000: flags.append(f"mcap too large (${mcap:,.0f})")
     if vol < 20_000:      flags.append(f"low vol (${vol:,.0f})")
 
@@ -62,7 +62,7 @@ def _vote_risk_manager(coin: dict, score: int) -> dict:
         c = m["content"].lower()
         if "bearish" in c or "fear" in c or "dumping" in c:
             bearish_count += 1
-    if bearish_count >= 3:
+    if bearish_count >= 5:
         flags.append(f"bearish market ({bearish_count}/5 signals bearish)")
 
     # Check recent risk alerts from brain

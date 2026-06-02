@@ -37,7 +37,7 @@ SCAN_INTERVAL = 45   # seconds
 MIN_LIQ       = 25_000
 MIN_VOL_24H   = 50_000
 MIN_TXNS_1H   = 50
-MAX_CHANGE_1H = 40   # already pumped if >40% in 1h — too late to scalp 20%
+MAX_CHANGE_1H = 200   # already pumped if >40% in 1h — too late to scalp 20%
 MIN_CHANGE_1H = -15
 
 seen = set()
@@ -222,7 +222,7 @@ def is_garbage(d):
     if d["liquidity"] < MIN_LIQ:          return f"liq ${d['liquidity']:,.0f} too low"
     if d["volume_24h"] < MIN_VOL_24H:     return f"vol ${d['volume_24h']:,.0f} too low"
     if d["buys_1h"] < MIN_TXNS_1H:        return "not enough buys"
-    if d["change_1h"] > 35:               return "already pumped >35%"
+    if d["change_1h"] > 200:               return "already pumped >35%"
     if d["change_1h"] < MIN_CHANGE_1H:    return "dumping"
     if d["age_hrs"] < 0.5:  return "too fresh — under 30mins"
     if d["age_hrs"] > 48:                 return f"too old {d['age_hrs']:.0f}h"
