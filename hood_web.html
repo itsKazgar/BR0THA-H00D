@@ -12,11 +12,21 @@ html, body {
   font-family: 'Courier New', monospace;
   font-size: 15px;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow-x: hidden;
 }
-#app { width: 100%; max-width: 620px; padding: 20px; }
+#app { width: 100%; max-width: 620px; padding: 20px; box-sizing: border-box; }
+pre { overflow-x: auto; max-width: 100%; font-size: clamp(7px, 2.8vw, 15px); line-height: 1.5; }
+#menu-input-row { flex-wrap: wrap; }
+@media (max-width: 480px) {
+  #app { padding: 12px 8px; }
+  #menu-key { font-size: 16px; }
+  #tcmd { font-size: 16px; }
+  #term-input span { font-size: clamp(9px, 3vw, 15px); }
+}
 .cy { color: #00ffff; }
 .gr { color: #00ff88; }
 .yl { color: #ffff00; }
