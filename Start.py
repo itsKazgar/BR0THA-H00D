@@ -37,29 +37,10 @@ def shutdown(sig=None, frame=None):
 
 signal.signal(signal.SIGINT,  shutdown)
 signal.signal(signal.SIGTERM, shutdown)
-
-def try:
-    try:
+try:
     kill_orphans()
 except Exception:
     pass
-except Exception:
-    pass:
-    agent_scripts = [os.path.basename(a[0]) for a in AGENTS]
-    result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
-    killed = []
-    for line in result.stdout.splitlines():
-        for script in agent_scripts:
-            if script in line and str(os.getpid()) not in line:
-                parts = line.split()
-                try:
-                    pid = int(parts[1])
-                    os.kill(pid, signal.SIGTERM)
-                    killed.append((pid, script))
-                except: pass
-    if killed:
-        print(YL + f"  ⚠  Cleaned up {len(killed)} orphan agent(s) from last session" + RS)
-        time.sleep(1)
 
 def box(text="", color="", width=55):
     pad = width - len(text)
@@ -79,16 +60,8 @@ print(CY + BD + r"""
 """ + RS)
 
 print(CY + "        Solana Alpha Collective  —  8 Agents" + RS)
-try:
-    kill_orphans()
-except Exception:
-    pass
 print()
 
-try:
-    kill_orphans()
-except Exception:
-    pass
 
 from core import brain
 brain.init_db()
