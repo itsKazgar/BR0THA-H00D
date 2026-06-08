@@ -38,7 +38,10 @@ def shutdown(sig=None, frame=None):
 signal.signal(signal.SIGINT,  shutdown)
 signal.signal(signal.SIGTERM, shutdown)
 
-def kill_orphans():
+def try:
+    kill_orphans()
+except Exception:
+    pass:
     agent_scripts = [os.path.basename(a[0]) for a in AGENTS]
     result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
     killed = []
@@ -76,7 +79,10 @@ print(CY + "        Solana Alpha Collective  —  8 Agents" + RS)
 print(DM + "  ─────────────────────────────────────────────────────────" + RS)
 print()
 
-kill_orphans()
+try:
+    kill_orphans()
+except Exception:
+    pass
 
 from core import brain
 brain.init_db()
