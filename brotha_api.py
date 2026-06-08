@@ -5,7 +5,6 @@ Fixed: duplicate routes, /status shape, POST /votes, POST /keys, /env/update
 Run: uvicorn brotha_api:app --host 0.0.0.0 --port 8000 --reload
 """
 
-from emergency_agent import install_emergency_handler
 import os, sys, sqlite3, json, time, subprocess, random
 from datetime import datetime
 from pathlib import Path
@@ -800,3 +799,109 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
+
+# ── Helius Webhook ─────────────────────────────────────────────────────────────
+@app.post("/webhook/helius")
+async def helius_webhook(payload: dict):
+    try:
+        for txn in payload if isinstance(payload, list) else [payload]:
+            txn_type = txn.get("type", "UNKNOWN")
+            source   = txn.get("source", "?")
+            sig      = txn.get("signature", "")[:12]
+            accs     = txn.get("accountData", [])
+            wallet   = accs[0].get("account", "?") if accs else "?"
+            msg = f"{wallet[:6]}.. | {txn_type} via {source} | {sig}.."
+            brain_db = sqlite3.connect("/home/kazgar/BR0THER-H00D/core/brain.db")
+            brain_db.execute("INSERT OR IGNORE INTO memory (agent, key, value) VALUES (?,?,?)",
+                           ("helius_webhook", sig, msg))
+            brain_db.commit()
+            brain_db.close()
+            print(f"  [Helius webhook] {msg}")
+        return {"ok": True}
+    except Exception as e:
+        print(f"  [Helius webhook] error: {e}")
+        return {"ok": False, "error": str(e)}
+
+# ── $H00D Token Gate ───────────────────────────────────────────────────────────
+from hood_gate import router as gate_router
+app.include_router(gate_router)
+
+# ── Serve terminal website ─────────────────────────────────────────────────────
+@app.get("/terminal")
+def terminal_ui():
+    return FileResponse("hood_web.html")
+
+# ── Chat endpoint ──────────────────────────────────────────────────────────────
+class ChatRequest(BaseModel):
+    message: str
+    wallet: str = ""
+
+@app.post("/chat")
+async def chat(req: ChatRequest):
+    try:
+        from ai_engine import ask
+        reply = await ask(req.message)
+        return {"reply": reply}
+    except Exception as e:
+        return {"reply": f"agent unavailable: {e}"}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#  XTERM WEBSOCKET TERMINAL
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+import asyncio
+import pty
+import fcntl
+import termios
+import struct
+from fastapi import WebSocket, WebSocketDisconnect
+
+@app.websocket("/ws/terminal")
+async def terminal_ws(websocket: WebSocket):
+    await websocket.accept()
+    master_fd, slave_fd = pty.openpty()
+    proc = await asyncio.create_subprocess_exec(
+        sys.executable, str(BOT_DIR / "Start.py"),
+        stdin=slave_fd, stdout=slave_fd, stderr=slave_fd,
+        cwd=str(BOT_DIR),
+        env={**os.environ, "TERM": "xterm-256color", "COLUMNS": "120", "LINES": "40"},
+    )
+    os.close(slave_fd)
+
+    async def read_output():
+        loop = asyncio.get_event_loop()
+        try:
+            while True:
+                data = await loop.run_in_executor(None, os.read, master_fd, 1024)
+                if not data:
+                    break
+                await websocket.send_bytes(data)
+        except Exception:
+            pass
+
+    asyncio.create_task(read_output())
+
+    try:
+        while True:
+            msg = await websocket.receive()
+            if "bytes" in msg:
+                os.write(master_fd, msg["bytes"])
+            elif "text" in msg:
+                data = msg["text"]
+                if data.startswith("resize:"):
+                    _, cols, rows = data.split(":")
+                    winsize = struct.pack("HHHH", int(rows), int(cols), 0, 0)
+                    fcntl.ioctl(master_fd, termios.TIOCSWINSZ, winsize)
+                else:
+                    os.write(master_fd, data.encode())
+    except WebSocketDisconnect:
+        pass
+    finally:
+        try:
+            proc.kill()
+            os.close(master_fd)
+        except:
+            pass
+
+@app.get("/xterm")
+def xterm_ui():
+    return FileResponse("terminal.html")

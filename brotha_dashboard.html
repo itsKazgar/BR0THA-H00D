@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="viewport" content="width=1400, minimum-scale=0.1"/>
 <title>BR0THER-H00D</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Ubuntu+Mono:ital,wght@0,400;0,700;1,400&family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet"/>
@@ -187,7 +187,7 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 .free-badge{display:inline-block;background:rgba(109,186,74,.12);border:1px solid var(--green);color:var(--green);font-size:9px;padding:1px 6px;border-radius:2px;letter-spacing:.06em;vertical-align:middle;margin-left:6px}
 
 /* ── MOBILE ─────────────────────────────────────────────────────────────────── */
-@media(max-width:768px){
+@media(max-width:1px){
   html,body{overflow:hidden;height:100%;height:100dvh}
 
   /* hide desktop sidebar */
@@ -273,7 +273,7 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 }
 
 /* hide bottom nav on desktop */
-@media(min-width:769px){
+@media(min-width:1px){
   .mob-nav{display:none}
   .mob-more{display:none}
 }
@@ -332,16 +332,6 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
 <!-- MAIN -->
 <div class="main">
   <div class="tabs">
-    <div class="tab on" onclick="go('overview')" id="t-overview">overview</div>
-    <div class="tab" onclick="go('deploy')" id="t-deploy">🚀 free deploy</div>
-    <div class="tab" onclick="go('keys')" id="t-keys">keys</div>
-    <div class="tab" onclick="go('wallet')" id="t-wallet">wallet</div>
-    <div class="tab" onclick="go('council')" id="t-council">agents</div>
-    <div class="tab" onclick="go('votes')" id="t-votes">votes</div>
-    <div class="tab" onclick="go('trade')" id="t-trade">swap</div>
-    <div class="tab" onclick="go('market')" id="t-market">market</div>
-    <div class="tab" onclick="go('logs')" id="t-logs">logs</div>
-  </div>
 
   <div class="panels">
 
@@ -360,7 +350,7 @@ input:checked+.tsl:before{transform:translateX(17px);background:var(--green)}
       </div>
 
       <div class="stats">
-        <div class="stat"><div class="stat-k">SOL balance</div><div class="stat-v g" id="s-bal">—</div><div class="stat-s" id="s-bal-usd">—</div></div>
+        <div class="stat"><div class="stat-k">paper balance</div><div class="stat-v g" id="s-bal">—</div><div class="stat-s" id="s-bal-usd">—</div></div>
         <div class="stat"><div class="stat-k">open trades</div><div class="stat-v" id="s-trades">—</div><div class="stat-s">max 3 concurrent</div></div>
         <div class="stat"><div class="stat-k">active agents</div><div class="stat-v g" id="s-agents">0</div><div class="stat-s">in council</div></div>
         <div class="stat"><div class="stat-k">bot status</div><div class="stat-v" id="s-state" style="font-size:14px">offline</div><div class="stat-s" id="s-uptime">—</div></div>
@@ -679,7 +669,7 @@ def run():
 
 <script>
 // ── STATE ──────────────────────────────────────────────────────────────────────
-var BOT = localStorage.getItem('b_url') || '';
+var BOT = 'http://localhost:8000';
 var LOGS = [];
 var VOTES = JSON.parse(localStorage.getItem('b_votes') || '[]');
 var AGENTS = JSON.parse(localStorage.getItem('b_agents') || '[]');
@@ -756,6 +746,8 @@ async function connectBot() {
     document.getElementById('s-state').textContent = 'online';
     document.getElementById('s-state').className = 'stat-v g';
     document.getElementById('s-trades').textContent = (d.trades || 0) + ' / 3';
+    document.getElementById('s-bal').textContent = '$' + (d.balance || 0).toFixed(2);
+    document.getElementById('s-bal-usd').textContent = 'paper USD · pnl: $' + (d.total_pnl || 0).toFixed(2);
     document.getElementById('s-uptime').textContent = 'v' + (d.version || '?');
     document.getElementById('s-agents').textContent = AGENTS.filter(a=>a.active).length;
     document.getElementById('status-out').textContent = '● trading-bot.service — active (running)\n   endpoint: ' + url + '\n   trades:   ' + (d.trades||0) + '/3\n   version:  v' + (d.version||'?');
@@ -806,7 +798,7 @@ async function fetchBalance(addr) {
     var r = await fetch(BOT + '/wallet/' + addr);
     var d = await r.json();
     var sol = d.sol || 0;
-    document.getElementById('s-bal').textContent = sol.toFixed(4) + ' SOL';
+    // wallet SOL shown in wallet panel only
     document.getElementById('s-bal-usd').textContent = '≈ $' + (sol * 165).toFixed(2) + ' USD';
     document.getElementById('bal-out').textContent = sol.toFixed(6) + ' SOL\n≈ $' + (sol * 165).toFixed(2) + ' USD (est.)';
     addLog('INFO', 'balance: ' + sol.toFixed(4) + ' SOL');
@@ -1274,7 +1266,7 @@ async function saveCustomAgent() {
     const name = document.getElementById('ca-name').value.trim();
     const task = document.getElementById('ca-task').value.trim();
     if (!name || !task) { toast('enter a name and task'); return; }
-    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    const url = 'http://localhost:8000';
     if (!url) { toast('connect bot first'); return; }
     try {
         const r = await fetch(url + '/agents/custom', {
@@ -1292,7 +1284,7 @@ async function saveCustomAgent() {
 }
 
 async function loadCustomAgents() {
-    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    const url = 'http://localhost:8000';
     if (!url) return;
     try {
         const r = await fetch(url + '/agents/custom');
@@ -1318,7 +1310,7 @@ async function loadCustomAgents() {
 }
 
 async function deleteCustomAgent(name) {
-    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
+    const url = 'http://localhost:8000';
     if (!url) return;
     try {
         await fetch(url + '/agents/custom/' + name, {method: 'DELETE'});
@@ -1328,63 +1320,3 @@ async function deleteCustomAgent(name) {
 }
 
 
-async function saveCustomAgent() {
-    const name = document.getElementById('ca-name').value.trim();
-    const task = document.getElementById('ca-task').value.trim();
-    if (!name || !task) { toast('enter a name and task'); return; }
-    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
-    if (!url) { toast('connect bot first'); return; }
-    try {
-        const r = await fetch(url + '/agents/custom', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({name, task})
-        });
-        if (r.ok) {
-            toast('✅ agent saved: ' + name);
-            document.getElementById('ca-name').value = '';
-            document.getElementById('ca-task').value = '';
-            loadCustomAgents();
-        }
-    } catch(e) { toast('error: ' + e.message); }
-}
-
-async function loadCustomAgents() {
-    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
-    if (!url) return;
-    try {
-        const r = await fetch(url + '/agents/custom');
-        const data = await r.json();
-        const el = document.getElementById('custom-agents-list');
-        if (!data.agents || data.agents.length === 0) {
-            el.innerHTML = '<div style="font-size:11px;color:var(--muted);padding:6px 0">no custom agents yet</div>';
-            return;
-        }
-        el.innerHTML = data.agents.map(a => `
-            <div class="agent-card" style="margin-bottom:6px">
-                <div>
-                    <div style="font-size:12px;color:var(--text)">⚙️ ${a.name}</div>
-                    <div style="font-size:10px;color:var(--muted);margin-top:2px">${a.task.substring(0, 80)}${a.task.length > 80 ? '...' : ''}</div>
-                </div>
-                <div style="display:flex;gap:6px;align-items:center">
-                    <span style="font-size:10px;color:var(--green)">${a.enabled ? 'active' : 'off'}</span>
-                    <button class="ibtn" onclick="deleteCustomAgent('${a.name}')" style="font-size:10px;color:var(--red)">✕</button>
-                </div>
-            </div>
-        `).join('');
-    } catch(e) {}
-}
-
-async function deleteCustomAgent(name) {
-    const url = (localStorage.getItem('b_url') || '').replace(/\/$/, '');
-    if (!url) return;
-    try {
-        await fetch(url + '/agents/custom/' + name, {method: 'DELETE'});
-        toast('removed: ' + name);
-        loadCustomAgents();
-    } catch(e) { toast('error'); }
-}
-
-</script>
-</body>
-</html>

@@ -37,6 +37,22 @@ def should_buy(coin: dict, score: int, reasons: list) -> dict:
         penalty = 0
         bonus   = 0
 
+
+        # 7. Market sentiment from learnings
+        try:
+            import sqlite3 as _sq
+            _c = _sq.connect("core/brain.db")
+            _rows = _c.execute("SELECT insight FROM learnings WHERE agent='news_scout' ORDER BY ts DESC LIMIT 3").fetchall()
+            _c.close()
+            _insights = " ".join([r[0] for r in _rows])
+            if "extreme fear" in _insights.lower() or "bearish" in _insights.lower():
+                penalty += 15
+                risk.append("market: extreme fear/bearish")
+            elif "bullish" in _insights.lower():
+                bonus += 10
+                flags.append("market: bullish sentiment")
+        except:
+            pass
         # 1. 5m price action — dumps are a red flag
         c5 = coin.get("change_5m", 0)
         if c5 <= -10:
@@ -124,8 +140,22 @@ def should_buy(coin: dict, score: int, reasons: list) -> dict:
     except:
         pass
 
+
+    # Fetch recent market learnings
+    market_context = ""
+    try:
+        import sqlite3 as _sq
+        _c = _sq.connect("core/brain.db")
+        _sent = _c.execute("SELECT insight FROM learnings WHERE agent='news_scout' ORDER BY ts DESC LIMIT 2").fetchall()
+        _whal = _c.execute("SELECT insight FROM learnings WHERE agent='whale_tracker' ORDER BY ts DESC LIMIT 2").fetchall()
+        _c.close()
+        _lines = [r[0] for r in _sent + _whal]
+        if _lines:
+            market_context = "\nMarket context:\n" + "\n".join(f"- {l}" for l in _lines)
+    except:
+        pass
     # LLM layer (runs if Groq key present)
-    prompt = f"""You are a Solana memecoin trader. Analyze this signal and decide BUY or SKIP.{custom_context}
+    prompt = f"""You are a Solana memecoin trader. Analyze this signal and decide BUY or SKIP.{custom_context}{market_context}
 
 Coin: {coin.get('name')}
 Price: ${coin.get('price')}

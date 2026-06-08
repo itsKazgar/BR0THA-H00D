@@ -77,3 +77,17 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+HELIUS_API_KEY = "your-key-here"
+HELIUS_URL = "https://api.helius.xyz/v0"
+
+def get_helius_transactions(wallet, limit=10):
+    url = f"{HELIUS_URL}/addresses/{wallet}/transactions"
+    params = {"api-key": HELIUS_API_KEY, "limit": limit}
+    try:
+        r = requests.get(url, params=params, timeout=8)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print(f"[whale_tracker] Helius error for {wallet}: {e}")
+        return []

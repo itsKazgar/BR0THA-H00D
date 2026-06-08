@@ -1,9 +1,7 @@
 """
 social_scanner.py - BR0THA Social Intelligence
-
-Monitors key CT accounts via Nitter RSS.
-Detects CA mentions, token symbols, and alpha signals.
-When a big account mentions a token -> instant priority scan.
+Uses free RSS feeds from crypto news sources.
+No API keys, no accounts needed.
 """
 
 import requests
@@ -12,181 +10,174 @@ import time
 from xml.etree import ElementTree as ET
 from datetime import datetime
 
-# Accounts ranked by alpha weight — higher = more important signal
-WATCH_ACCOUNTS = {
-    "aeyakovenko":  10,  # Toly — Solana founder, mentions = massive
-    "rajgokal":     10,  # Raj — Solana co-founder
-    "solana":        8,  # Official Solana account
-    "JupiterExchange": 7, # Jupiter — sees all swap flow
-    "blknoiz06":     9,  # Ansem — one of best Solana traders
-    "DegenSpartan":  8,  # Degen Spartan — respected CT trader
-    "cobie":         7,  # Cobie — respected macro + crypto
-    "inversebrah":   7,  # inversebrah — solid Solana alpha
-    "pumpdotfun":    6,  # Pump.fun official
+RSS_FEEDS = {
+    "CoinDesk":      ("https://www.coindesk.com/arc/outboundfeeds/rss/", "news"),
+    "Cointelegraph": ("https://cointelegraph.com/rss",                   "news"),
+    "Decrypt":       ("https://decrypt.co/feed",                         "news"),
+    "TheBlock":      ("https://www.theblock.co/rss.xml",                 "news"),
 }
 
-NITTER_BASE = "https://nitter.net"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
-# Solana CA pattern — base58, 32-44 chars
-CA_PATTERN = re.compile(r'\b[1-9A-HJ-NP-Za-km-z]{32,44}\b')
-
-# Token symbol pattern — $SYMBOL
+CA_PATTERN     = re.compile(r'\b[1-9A-HJ-NP-Za-km-z]{32,44}\b')
 SYMBOL_PATTERN = re.compile(r'\$([A-Z]{2,10})\b')
+IGNORE_SYMBOLS = {"THE","AND","FOR","SOL","USD","BTC","ETH","NFT","API","SDK","AI","VC"}
 
-# Keywords that signal alpha
 ALPHA_KEYWORDS = [
-    "just launched", "new token", "early", "gem", "100x",
-    "buying", "accumulating", "loaded", "CA:", "contract:",
-    "pump", "solana launch", "just deployed", "stealth launch",
-    "airdrop", "fair launch", "liquidity added"
+    "launched","new token","early","gem","100x","buying","accumulating",
+    "pump","deployed","stealth launch","fair launch","liquidity",
+    "airdrop","exploit","hack","rug","scam","sec","regulation",
+    "etf","approved","rejected","blackrock","halving",
 ]
 
-seen_tweets = set()  # avoid processing same tweet twice
+NARRATIVE_KEYWORDS = {
+    "ai_meta":    ["ai agent","artificial intelligence","llm","gpt","ai token"],
+    "meme_meta":  ["meme coin","memecoin","pepe","doge","dog coin"],
+    "defi_meta":  ["defi","yield","liquidity","amm","dex","lending"],
+    "btc_meta":   ["bitcoin","btc","sats","halving","etf","blackrock"],
+    "reg_meta":   ["sec","regulation","congress","bill","ban","approved","rejected"],
+    "fear_meta":  ["crash","rug","scam","hack","exploit","warning","emergency"],
+    "greed_meta": ["bull run","all time high","ath","parabolic","moon","rally"],
+}
+
+seen = set()
 
 
-def fetch_feed(account):
-    """Fetch RSS feed for an account."""
+def fetch_feed(name, url):
     try:
-        r = requests.get(
-            f"{NITTER_BASE}/{account}/rss",
-            headers=HEADERS,
-            timeout=10
-        )
+        r = requests.get(url, headers=HEADERS, timeout=10)
         if r.status_code != 200:
             return []
         root = ET.fromstring(r.text)
         items = []
         for item in root.findall(".//item"):
-            title = item.find("title").text or ""
-            desc  = item.find("description").text or ""
-            date  = item.find("pubDate").text or ""
-            link  = item.find("link").text or ""
-            full_text = title + " " + desc
+            title = item.find("title")
+            desc  = item.find("description")
+            link  = item.find("link")
+            date  = item.find("pubDate")
+            t = title.text if title is not None else ""
+            d = desc.text  if desc  is not None else ""
+            l = link.text  if link  is not None else ""
+            dt = date.text if date  is not None else ""
             items.append({
-                "account": account,
-                "text":    full_text,
-                "title":   title,
-                "date":    date,
-                "link":    link,
-                "id":      link  # use link as unique ID
+                "source": name,
+                "text":   t + " " + d,
+                "title":  t,
+                "link":   l,
+                "date":   dt,
+                "id":     l,
             })
         return items
     except Exception as e:
+        print(f"  ⚠️  {name} feed error: {e}")
         return []
 
 
-def analyze_tweet(tweet, weight):
-    """
-    Analyze a tweet for alpha signals.
-    Returns a signal dict or None.
-    """
-    text = tweet["text"]
-    text_upper = text.upper()
-    signals = []
-    score = 0
+def analyze(item):
+    text     = item["text"]
+    text_low = text.lower()
+    signals  = []
+    score    = 0
 
-    # Check for Solana CA addresses
-    cas = CA_PATTERN.findall(text)
-    # Filter out common non-CA base58 strings (tx hashes are longer)
-    cas = [ca for ca in cas if 32 <= len(ca) <= 44]
+    # Contract addresses
+    cas = [c for c in CA_PATTERN.findall(text) if 32 <= len(c) <= 44]
     if cas:
-        score += 40 * weight
-        signals.append(f"CA mentioned: {cas[0]}")
+        score += 50
+        signals.append(f"CA:{cas[0][:8]}...")
 
-    # Check for token symbols
-    symbols = SYMBOL_PATTERN.findall(text_upper)
-    # Filter noise
-    ignore = {"THE","AND","FOR","SOL","USD","BTC","ETH","NFT","API","SDK"}
-    symbols = [s for s in symbols if s not in ignore]
+    # Token symbols
+    symbols = [s for s in SYMBOL_PATTERN.findall(text.upper()) if s not in IGNORE_SYMBOLS]
     if symbols:
-        score += 20 * weight
-        signals.append(f"Token symbols: {', '.join(['$'+s for s in symbols[:3]])}")
+        score += 15
+        signals.append(f"{', '.join(['$'+s for s in symbols[:3]])}")
 
-    # Check alpha keywords
-    text_lower = text.lower()
-    found_keywords = [kw for kw in ALPHA_KEYWORDS if kw in text_lower]
-    if found_keywords:
-        score += 15 * weight
-        signals.append(f"Keywords: {', '.join(found_keywords[:3])}")
+    # Alpha keywords
+    kws = [k for k in ALPHA_KEYWORDS if k in text_low]
+    if kws:
+        score += 10 * min(len(kws), 3)
+        signals.append(f"kw: {', '.join(kws[:3])}")
 
-    # Boost if it's an original tweet not a RT
-    is_rt = text.startswith("RT by")
-    if not is_rt:
-        score += 10 * weight
-        signals.append("Original tweet (not RT)")
+    # Narratives
+    matched_narratives = []
+    for meta, words in NARRATIVE_KEYWORDS.items():
+        if any(w in text_low for w in words):
+            matched_narratives.append(meta)
+            score += 8
+    if matched_narratives:
+        signals.extend(matched_narratives)
 
-    if score < 20:
+    if score < 15:
         return None
 
     return {
-        "account":  tweet["account"],
-        "weight":   weight,
-        "score":    score,
-        "signals":  signals,
-        "cas":      cas,
-        "symbols":  symbols,
-        "text":     tweet["title"][:200],
-        "link":     tweet["link"],
-        "date":     tweet["date"],
-        "is_rt":    is_rt
+        "source":     item["source"],
+        "score":      score,
+        "signals":    signals,
+        "cas":        cas,
+        "symbols":    symbols,
+        "title":      item["title"][:200],
+        "link":       item["link"],
+        "date":       item["date"],
+        "narratives": matched_narratives,
     }
 
 
 def scan_social():
-    """
-    Scan all watched accounts for alpha signals.
-    Returns list of signals sorted by score.
-    """
     all_signals = []
-    new_tweets  = 0
+    new_items   = 0
 
-    for account, weight in WATCH_ACCOUNTS.items():
-        tweets = fetch_feed(account)
-        for tweet in tweets:
-            tid = tweet["id"]
-            if tid in seen_tweets:
+    for name, (url, _) in RSS_FEEDS.items():
+        items = fetch_feed(name, url)
+        for item in items:
+            if item["id"] in seen:
                 continue
-            seen_tweets.add(tid)
-            new_tweets += 1
-
-            signal = analyze_tweet(tweet, weight)
-            if signal:
-                all_signals.append(signal)
-
-        time.sleep(0.5)  # be nice to nitter
+            seen.add(item["id"])
+            new_items += 1
+            s = analyze(item)
+            if s:
+                all_signals.append(s)
+        time.sleep(0.3)
 
     all_signals.sort(key=lambda x: x["score"], reverse=True)
-    return all_signals, new_tweets
+    return all_signals, new_items
 
 
 def format_signal(s):
-    rt_tag = "[RT]" if s["is_rt"] else "[OG]"
     print(f"\n{'='*55}")
-    print(f"  @{s['account']} {rt_tag} | score={s['score']} | weight={s['weight']}")
-    print(f"  {s['text'][:180]}")
+    print(f"  [{s['source']}] score={s['score']}")
+    print(f"  {s['title'][:180]}")
     print(f"  Signals: {' | '.join(s['signals'])}")
     if s["cas"]:
-        print(f"  ⚡ CA FOUND: {s['cas'][0]}")
+        print(f"  ⚡ CA: {s['cas'][0]}")
     if s["symbols"]:
-        print(f"  🎯 Symbols: {', '.join(['$'+x for x in s['symbols']])}")
-    print(f"  Link: {s['link']}")
+        print(f"  🎯 {', '.join(['$'+x for x in s['symbols']])}")
+    print(f"  {s['link']}")
+    print(f"  {s['date']}")
 
 
 if __name__ == "__main__":
-    print("BR0THA SOCIAL SCANNER — monitoring CT alpha\n")
-    print(f"Watching {len(WATCH_ACCOUNTS)} accounts...")
+    print("BR0THA SOCIAL SCANNER — free RSS mode\n")
+    print(f"Watching {len(RSS_FEEDS)} feeds: {', '.join(RSS_FEEDS.keys())}")
 
     while True:
-        print(f"\n[{datetime.utcnow().strftime('%H:%M:%S')} UTC] Scanning social feeds...")
+        print(f"\n[{datetime.utcnow().strftime('%H:%M:%S')} UTC] Scanning feeds...")
         signals, new = scan_social()
-        print(f"  {new} new tweets | {len(signals)} signals found")
+        print(f"  {new} new items | {len(signals)} signals")
+
+        # Narrative summary
+        narrative_counts = {}
+        for s in signals:
+            for n in s["narratives"]:
+                narrative_counts[n] = narrative_counts.get(n, 0) + 1
+        if narrative_counts:
+            top = sorted(narrative_counts.items(), key=lambda x: x[1], reverse=True)[:4]
+            print(f"  📊 trending: {', '.join([f'{k}x{v}' for k,v in top])}")
 
         for s in signals[:5]:
             format_signal(s)
 
         if not signals:
-            print("  No alpha detected this cycle.")
+            print("  Nothing significant detected.")
 
-        print(f"\n[SLEEP] Next social scan in 2 min...")
-        time.sleep(120)
+        print(f"\n  Next scan in 5 min...")
+        time.sleep(300)

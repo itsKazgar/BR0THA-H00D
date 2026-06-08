@@ -1,15 +1,32 @@
 import os, requests, base64, json
 
-JUPITER_QUOTE = "https://quote-api.jup.ag/v6/quote"
-JUPITER_SWAP  = "https://quote-api.jup.ag/v6/swap"
+JUPITER_QUOTE = "https://api.jup.ag/swap/v1/quote"
+JUPITER_SWAP  = "https://api.jup.ag/swap/v1/swap"
 RPC_URL       = os.getenv("SOLANA_RPC", "https://api.mainnet-beta.solana.com")
 USDC_MINT     = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 SOL_MINT      = "So11111111111111111111111111111111111111112"
 USDC_DECIMALS = 6
 
-def get_quote(input_mint: str, output_mint: str, amount_usd: float, slippage_bps=150):
+def get_quote(input_mint: str, output_mint: str, amount_usd: float, slippage_bps=3000, input_decimals=6):
     try:
-        amount_raw = int(amount_usd * (10 ** USDC_DECIMALS))
+        # If input is SOL, convert USD -> SOL -> lamports (9 decimals)
+        # If input is a token, amount is already raw token count, just apply decimals
+        if input_mint == SOL_MINT:
+            try:
+                r2 = requests.get(
+                    "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+                    timeout=5)
+                sol_price = float(r2.json()["solana"]["usd"])
+                sol_amount = amount_usd / sol_price
+                amount_raw = int(sol_amount * (10 ** 9))
+            except Exception:
+                return None, "could not fetch SOL price for conversion"
+        else:
+            amount_raw = int(amount_usd * (10 ** input_decimals))
+
+        if amount_raw <= 0:
+            return None, f"amount_raw={amount_raw} too small"
+
         r = requests.get(JUPITER_QUOTE, params={
             "inputMint":   input_mint,
             "outputMint":  output_mint,
@@ -48,14 +65,14 @@ def execute_swap(wallet_keypair, quote_response: dict) -> dict:
 
         tx_bytes  = base64.b64decode(swap_data["swapTransaction"])
         tx        = VersionedTransaction.from_bytes(tx_bytes)
-        signed_tx = wallet_keypair.sign_message(bytes(tx))
+        signed_tx = wallet_keypair.sign_message(bytes(tx.message)); signed_tx = VersionedTransaction(tx.message, [wallet_keypair])
 
         # Send to RPC
         payload = {
             "jsonrpc": "2.0", "id": 1,
             "method":  "sendTransaction",
             "params":  [
-                base64.b64encode(bytes(tx)).decode(),
+                base64.b64encode(bytes(signed_tx)).decode(),
                 {"encoding": "base64", "skipPreflight": False,
                  "preflightCommitment": "confirmed"}
             ]

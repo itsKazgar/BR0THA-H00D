@@ -1,63 +1,40 @@
-# BR0THER-H00D — Solana Alpha Collective
+# 🔺 BR0THER-H00D
 
-8 AI agents hunting Solana memecoins 24/7.
+A council of small AI agents ("brothers") that share one memory and
+answer questions from real data. Each brother owns one job — crypto
+prices, web search, tech news, tasks, weather — and an orchestrator
+routes your request to whoever fits.
 
-## QUICK START
+## What it does
+- Pulls **real data** (CoinGecko, DexScreener, DuckDuckGo, Yahoo
+  Finance, HackerNews) — summaries are grounded in retrieved results,
+  not made up.
+- Shares one SQLite "brain" so every brother can read what the others found.
+- Organizes brothers into circles (Intel, Money, Ops) under an orchestrator.
 
-    git clone https://github.com/itsKazgar/BR0THER-H00D
-    cd BR0THER-H00D
-    bash install.sh
-    python Start.py
+## What it is NOT
+- Not financial advice. The Money brothers **report** prices and news.
+  They do not predict markets or tell you what to buy.
+- Not autonomous. It drafts and reports; you decide and act.
 
-Select [2] Paper + Agents. No keys or wallet needed to start.
+## Setup
+```bash
+git clone <your-repo> && cd BR0THER-H00D
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # add your free Groq key
+python3 smoke_test.py  # confirm everything's healthy
+```
 
-## THE 8 AGENTS
+## Required
+- `GROQ_API_KEY` — free at console.groq.com. Everything else is optional.
 
-    Scanner       — hunts trending tokens across DexScreener, CoinGecko, pump.fun
-    Whale Tracker — watches smart wallet moves
-    News Scout    — reads crypto news and market sentiment
-    Pump Hunter   — finds early pump.fun gems before they explode
-    Risk Manager  — blocks bad trades, protects your balance
-    Analyst       — AI reasoning on every signal before buying
-    Trader        — executes buys and sells, manages positions
-    Memory Keeper — logs wins/losses so the bot keeps learning
+## Health check
+```bash
+python3 smoke_test.py
+```
 
-Every trade needs 7+ weighted votes from the council. No single agent can force a trade.
-
-## MODES
-
-    [1] Solo Paper Trade  — auto trader, no agents
-    [2] Paper + Agents    — full system, fake money  <- start here
-    [3] Live Trading      — real funds, all agents
-    [4] Custom Mode       — build your own agents
-
-## SETUP
-
-    python setup.py
-
-Free AI: Groq (console.groq.com) or OpenRouter (openrouter.ai)
-Paid AI: Anthropic, OpenAI, Cerebras
-
-## LIVE TRADING
-
-Run setup.py and pick your wallet option:
-
-    [1] Generate a new wallet automatically
-    [2] Import existing private key (Phantom etc)
-    [3] Skip — paper trading only
-
-Start with $10-20. Never share your private key.
-
-## DASHBOARD
-
-    Terminal 1: python Start.py
-    Terminal 2: python brotha_api.py
-    Browser:    http://localhost:8000
-
-## MEMORY
-
-Learns from every trade. Stored in core/brain.db. Persists across restarts.
-
-## LICENSE
-
-MIT — use it, fork it, build on it.
+## Adding a brother
+Drop a `.py` file in `brothers/` with `NAME`, `DESCRIPTION`, and a
+`run(user_input)` function that returns a string (or `None` to pass).
+It auto-loads. Run the smoke test to confirm.

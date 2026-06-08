@@ -23,7 +23,7 @@ def get_price(mint):
         return None
 
 brain.init_db()
-state    = brain.load_state("trader")
+state    = brain.load_state("trader_paper" if os.getenv("TRADE_MODE","paper").lower() != "live" else "trader_live")
 positions = state.get("positions", {})
 balance   = state.get("balance", 0)
 mode      = "LIVE" if os.getenv("LIVE_MODE","").lower() == "true" else "PAPER"

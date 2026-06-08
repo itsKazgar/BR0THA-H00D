@@ -92,14 +92,15 @@ print(box())
 print(box("[1]  Solo Paper Trade  — auto trader, no agents", GR))
 print(box("[2]  Paper + Agents    — auto trader + 8 agents ",  CY))
 print(box("[3]  Live Trading      — real funds, all agents active",   MG))
-print(box("[4]  Custom Mode       — build & edit your own agents",    YL))
+print(box("[4]  Custom Trading Mode — build & edit your own agents",    YL))
+print(box("[5]  Assistant Mode   — personal AI assistant & tasks",   RD))
 print(box("[0]  Exit",                                                DM))
 print(box())
 print(CY + "  ╚" + "═" * W + "╝" + RS)
 print()
 
 try:
-    choice = input(CY + "  Select (0-4): " + RS).strip()
+    choice = input(CY + "  Select (0-5): " + RS).strip()
 except (EOFError, KeyboardInterrupt):
     shutdown()
 print()
@@ -179,6 +180,12 @@ elif choice == "4":
     except KeyboardInterrupt:
         api_proc.terminate()
         print(CY + "\n  Dashboard stopped.\n" + RS)
+    sys.exit(0)
+
+elif choice == "5":
+    print(MG + BD + "  ASSISTANT MODE — your personal AI\n" + RS)
+    import agents.assistant_launcher as launcher
+    launcher.run()
     sys.exit(0)
 
 else:

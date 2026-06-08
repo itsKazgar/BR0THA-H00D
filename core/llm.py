@@ -8,12 +8,28 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 OR_URL   = "https://openrouter.ai/api/v1/chat/completions"
-OR_MODEL = "deepseek/deepseek-r1-0528:free"
+# Change OR_MODEL in .env to switch — all free unless marked (paid)
+# Free options:
+#   deepseek/deepseek-r1-0528:free        — best reasoning, free
+#   deepseek/deepseek-chat:free           — fast, free
+#   qwen/qwen3-235b-a22b:free             — huge Qwen3, free
+#   mistralai/mistral-7b-instruct:free    — fast Mistral, free
+#   google/gemini-2.0-flash-exp:free      — Gemini flash, free
+#   moonshotai/kimi-k2:free               — Kimi K2, free
+# Paid (cheap):
+#   anthropic/claude-haiku-4-5            — Claude Haiku
+#   openai/gpt-4o-mini                    — GPT-4o mini
+#   deepseek/deepseek-r1                  — DeepSeek R1 full
+OR_MODEL = os.getenv("OPENROUTER_MODEL", "deepseek/deepseek-r1-0528:free")
 
 HERMES_MODELS = [
-    "nous-hermes-2-mistral-7b",
-    "nous-hermes-2-pro-llama3-8b",
+    "hermes-3",
+    "nous-hermes-3",
+    "hermes-3-llama3.1-70b",
     "hermes-3-llama3.1-8b",
+    "nous-hermes-2-pro-llama3-8b",
+    "nous-hermes-2-mistral-7b",
+    "hermes-2",
 ]
 
 def _check_ollama():

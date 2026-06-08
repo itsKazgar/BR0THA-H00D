@@ -22,7 +22,7 @@ def get(url, timeout=8):
 
 def check():
     now   = datetime.now().strftime("%H:%M:%S")
-    state = brain.load_state("trader")
+    state = brain.load_state("trader_paper" if os.getenv("TRADE_MODE","paper").lower() != "live" else "trader_live")
     if not state:
         return
 

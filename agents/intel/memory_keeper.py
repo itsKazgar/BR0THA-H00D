@@ -57,7 +57,7 @@ def cleanup():
 
 def summarize():
     now     = datetime.now().strftime("%H:%M:%S")
-    state   = brain.load_state("trader")
+    state   = brain.load_state("trader_paper" if os.getenv("TRADE_MODE","paper").lower() != "live" else "trader_live")
     history = state.get("history", [])
     balance = state.get("balance", 100)
     pnl     = state.get("total_pnl", 0)

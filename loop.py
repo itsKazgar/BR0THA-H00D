@@ -169,29 +169,55 @@ def get_fear_and_greed():
     return _fg_cache.copy()
 
 # ── SOCIAL SCANNER ─────────────────────────────────────────────────────────────
+# RSS feeds replace dead Nitter
+RSS_FEEDS = {
+    "CoinDesk":      "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    "Cointelegraph": "https://cointelegraph.com/rss",
+    "Decrypt":       "https://decrypt.co/feed",
+    "TheBlock":      "https://www.theblock.co/rss.xml",
+}
+
+TITLE_BLACKLIST = [
+    "what happened in crypto today",
+    "weekly roundup",
+    "market wrap",
+    "morning briefing",
+]
+
+import re as _re
+SEC_PATTERN = _re.compile(r'\bsec\b')
+
 def fetch_feed(account):
-    try:
-        r = requests.get(f"{NITTER_BASE}/{account}/rss",
-                         headers=HEADERS, timeout=10)
-        if r.status_code != 200:
-            return []
-        root  = ET.fromstring(r.text)
-        items = []
-        for item in root.findall(".//item"):
-            title = item.find("title").text or ""
-            desc  = item.find("description").text or ""
-            link  = item.find("link").text or ""
-            date  = item.find("pubDate").text or ""
-            items.append({
-                "account": account,
-                "text":    (title + " " + desc).strip(),
-                "title":   title,
-                "link":    link,
-                "date":    date,
-            })
-        return items
-    except:
-        return []
+    """account param ignored — pulls from RSS feeds instead of Nitter."""
+    items = []
+    for source, url in RSS_FEEDS.items():
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=10)
+            if r.status_code != 200:
+                continue
+            root = ET.fromstring(r.text)
+            for item in root.findall(".//item"):
+                title = item.find("title")
+                desc  = item.find("description")
+                link  = item.find("link")
+                date  = item.find("pubDate")
+                t = title.text if title is not None else ""
+                d = desc.text  if desc  is not None else ""
+                l = link.text  if link  is not None else ""
+                dt = date.text if date  is not None else ""
+                # filter low-value articles
+                if any(bl in t.lower() for bl in TITLE_BLACKLIST):
+                    continue
+                items.append({
+                    "account": source,
+                    "text":    (t + " " + d).strip(),
+                    "title":   t,
+                    "link":    l,
+                    "date":    dt,
+                })
+        except Exception as e:
+            print(f"  [RSS] {source} error: {e}")
+    return items
 
 def parse_tweet(tweet, weight):
     text    = tweet["text"]

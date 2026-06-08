@@ -1,0 +1,80 @@
+2026-05-23 08:10:17,732 [INFO] TRADE SIGNAL: RICH votes=4 conf=42.6
+2026-05-23 08:15:12,698 [INFO] TRADE SIGNAL: XING votes=4 conf=62.1
+2026-05-23 09:16:27,895 [INFO] TRADE SIGNAL: 739dnZEG votes=5 conf=74
+2026-05-23 09:17:06,481 [INFO] TRADE SIGNAL: RICH votes=4 conf=67
+2026-05-23 09:17:17,243 [INFO] TRADE SIGNAL: BTCBANK votes=5 conf=60
+2026-05-23 12:29:28,310 [INFO] TRADE SIGNAL: 739dnZEG votes=6 conf=65
+2026-05-29 10:35:12,033 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:35:12,926 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:35:13,338 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:35:13,530 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:35:13,538 [INFO] [AI] onchain → groq_llama8b ✅
+2026-05-29 10:35:13,676 [INFO] [AI] security → cerebras_large ✅
+2026-05-29 10:35:13,729 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:35:15,443 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:35:18,511 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:35:24,084 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:35:24,707 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:35:24,736 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:35:25,037 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:35:25,151 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:35:25,389 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:35:26,478 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:35:26,847 [WARNING] [AI] onchain → groq_llama8b ✗  groq_llama8b: rate limited
+2026-05-29 10:35:27,185 [WARNING] [AI] security → cerebras_large ✗  cerebras_large: rate limited
+2026-05-29 10:35:28,478 [INFO] [AI] onchain → cerebras_small ✅
+2026-05-29 10:35:29,240 [INFO] [AI] security → groq_qwen32b ✅
+2026-05-29 10:35:30,661 [WARNING] [AI] onchain → groq_llama8b ✗  groq_llama8b: rate limited
+2026-05-29 10:35:32,504 [INFO] [AI] onchain → cerebras_small ✅
+2026-05-29 10:48:07,118 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:48:07,579 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:48:07,729 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:48:08,167 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:48:08,450 [INFO] [AI] onchain → groq_llama8b ✅
+2026-05-29 10:48:08,721 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:48:09,182 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:48:12,537 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:48:13,251 [INFO] [AI] security → cerebras_large ✅
+2026-05-29 10:48:17,740 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:48:18,380 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:48:18,668 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:48:18,770 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:48:19,058 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:48:20,621 [WARNING] [AI] onchain → groq_llama8b ✗  groq_llama8b: rate limited
+2026-05-29 10:48:20,858 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:48:20,936 [WARNING] [AI] security → cerebras_large ✗  cerebras_large: rate limited
+2026-05-29 10:48:22,719 [INFO] [AI] security → groq_qwen32b ✅
+2026-05-29 10:48:32,817 [INFO] [AI] onchain → cerebras_small ✅
+2026-05-29 10:48:33,217 [INFO] [AI] onchain → groq_llama8b ✅
+2026-05-29 10:49:10,476 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:49:11,839 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:49:11,931 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:49:12,047 [INFO] [AI] onchain → groq_llama8b ✅
+2026-05-29 10:49:12,713 [WARNING] [AI] trader → cerebras_small ✗  cerebras_small: rate limited
+2026-05-29 10:49:13,076 [WARNING] [AI] risk → cerebras_large ✗  cerebras_large: rate limited
+2026-05-29 10:49:13,443 [INFO] [AI] trader → groq_llama8b ✅
+2026-05-29 10:49:13,760 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:49:14,190 [INFO] [AI] risk → groq_llama70b ✅
+2026-05-29 10:49:14,470 [WARNING] [AI] security → cerebras_large ✗  cerebras_large: rate limited
+2026-05-29 10:49:16,037 [INFO] [AI] security → groq_qwen32b ✅
+2026-05-29 10:49:16,053 [INFO] TRADE SIGNAL: SHIKOKU votes=5 conf=75
+2026-05-29 10:49:31,638 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:49:33,038 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:49:33,061 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:49:33,101 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:49:33,383 [INFO] [AI] security → cerebras_large ✅
+2026-05-29 10:49:33,393 [INFO] [AI] onchain → groq_llama8b ✅
+2026-05-29 10:49:34,113 [WARNING] [AI] risk → cerebras_large ✗  cerebras_large: rate limited
+2026-05-29 10:49:34,283 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:49:35,108 [INFO] [AI] risk → groq_llama70b ✅
+2026-05-29 10:49:51,278 [INFO] [AI] intel → groq_llama8b ✅
+2026-05-29 10:49:52,205 [INFO] [AI] income → groq_llama8b ✅
+2026-05-29 10:49:52,231 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:49:52,350 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:49:52,355 [INFO] [AI] analyst → groq_qwen32b ✅
+2026-05-29 10:49:52,553 [INFO] [AI] security → cerebras_large ✅
+2026-05-29 10:49:53,120 [INFO] [AI] trader → cerebras_small ✅
+2026-05-29 10:49:53,195 [INFO] [AI] risk → cerebras_large ✅
+2026-05-29 10:49:53,974 [WARNING] [AI] onchain → groq_llama8b ✗  groq_llama8b: rate limited
+2026-05-29 10:49:56,168 [INFO] [AI] onchain → cerebras_small ✅
+2026-05-29 10:49:56,972 [INFO] [AI] onchain → groq_llama8b ✅
